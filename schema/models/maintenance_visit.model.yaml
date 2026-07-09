@@ -1,0 +1,158 @@
+# =============================================================================
+# Domain: Maintenance
+# Entity: MaintenanceVisit (+ MaintenanceVisitPart)
+# Description: One maintenance visit on an asset (preventive from a schedule, or corrective ad-hoc). Its
+# parts are issued out of inventory on completion (valued at inventory's moving-average — the cost is
+# inventory's number, not a made-up one) and, with labor, roll up into the visit cost. On completion the
+# visit posts ONE balanced maintenance-cost journal — the 9th GL producer:
+#   Dr Maintenance Expense (total) · Cr Inventory (parts) · Cr Labor Payable (labor). Posts at most once.
+# =============================================================================
+
+models:
+  - name: MaintenanceVisit
+    collection: maintenance_visits
+    description: "One maintenance visit on an asset (planned → in_progress → completed)"
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique visit id"
+      company_id:
+        type: uuid
+        attributes: ["@required", "@exclude_from_foreign_key_check"]
+        description: "Org owner # logical FK to organization.Company.id"
+      asset_id:
+        type: uuid
+        attributes: ["@required", "@exclude_from_foreign_key_check"]
+        description: "The asset serviced # logical FK to asset.Asset.id"
+      schedule_id:
+        type: uuid?
+        attributes: ["@foreign_key(MaintenanceSchedule.id)"]
+        description: "The preventive schedule this visit fulfils (null for a corrective visit)"
+      maintenance_type:
+        type: MaintenanceType
+        attributes: ["@required", "@default(preventive)"]
+        description: "preventive (scheduled) | corrective (ad-hoc)"
+      status:
+        type: VisitStatus
+        attributes: ["@required", "@default(planned)"]
+        description: "planned → in_progress → completed | cancelled"
+      warehouse_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "Warehouse parts are issued from # logical FK to inventory.Warehouse.id"
+      warranty_claim_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "The support warranty claim this corrective visit services # logical FK to support.WarrantyClaim.id"
+      scheduled_date:
+        type: date
+        attributes: ["@required"]
+        description: "When the visit is scheduled"
+      performed_date:
+        type: date?
+        description: "When the visit was completed"
+      labor_cost:
+        type: decimal
+        attributes: ["@default(0)", "@precision(18,2)", "@non_negative"]
+        description: "Labor cost of the visit (IDR)"
+      parts_cost:
+        type: decimal
+        attributes: ["@default(0)", "@precision(18,2)", "@non_negative"]
+        description: "Σ parts value issued from inventory (inventory's moving-average number)"
+      total_cost:
+        type: decimal
+        attributes: ["@default(0)", "@precision(18,2)", "@non_negative"]
+        description: "labor_cost + parts_cost"
+      maintenance_expense_account_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "Dr account for the cost post # logical FK to accounting.Account.id"
+      parts_inventory_account_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "Cr account for issued parts # logical FK to accounting.Account.id"
+      labor_payable_account_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "Cr account for labor # logical FK to accounting.Account.id"
+      journal_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "The posted journal # logical FK to accounting.Journal.id"
+      accounting_post_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "The AccountingPost id # logical FK to accounting.AccountingPost.id"
+      notes:
+        type: string?
+        attributes: ["@length(max=2000)"]
+        description: "Visit notes"
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+    indexes:
+      - type: index
+        fields: [company_id, asset_id]
+      - type: index
+        fields: [status]
+
+  - name: MaintenanceVisitPart
+    collection: maintenance_visit_parts
+    description: "One part line planned for a visit (item + quantity), issued from inventory on completion"
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique line id"
+      visit_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(MaintenanceVisit.id)"]
+        description: "Parent visit"
+      item_id:
+        type: uuid
+        attributes: ["@required", "@exclude_from_foreign_key_check"]
+        description: "The part # logical FK to inventory.Item.id"
+      quantity:
+        type: decimal
+        attributes: ["@default(0)", "@precision(18,4)", "@non_negative"]
+        description: "Quantity used"
+      unit_cost:
+        type: decimal
+        attributes: ["@default(0)", "@precision(18,2)", "@non_negative"]
+        description: "Valued unit cost from inventory (set on completion)"
+      amount:
+        type: decimal
+        attributes: ["@default(0)", "@precision(18,2)", "@non_negative"]
+        description: "quantity × unit_cost (set on completion)"
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+    indexes:
+      - type: index
+        fields: [visit_id]
+
+enums:
+  - name: MaintenanceType
+    description: "Kind of maintenance"
+    variants:
+      - name: preventive
+        description: "Scheduled, from a maintenance plan"
+        default: true
+      - name: corrective
+        description: "Ad-hoc, in response to a fault"
+
+  - name: VisitStatus
+    description: "Visit lifecycle"
+    variants:
+      - name: planned
+        description: "Planned, not started"
+        default: true
+      - name: in_progress
+        description: "Being performed"
+      - name: completed
+        description: "Completed + posted"
+      - name: cancelled
+        description: "Cancelled"

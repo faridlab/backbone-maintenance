@@ -1,0 +1,51 @@
+# =============================================================================
+# Domain: Maintenance
+# Entity: MaintenanceSchedule
+# Description: A preventive maintenance plan for a fixed asset (backbone-asset) — recurs every N days. On a
+# visit's completion the schedule's next_due_date advances by its interval, so the next visit is due on
+# time. Corrective (ad-hoc) visits reference no schedule. Promoted for an asset-heavy customer (fleet,
+# equipment rental). Reads the asset as a logical FK.
+# =============================================================================
+
+models:
+  - name: MaintenanceSchedule
+    collection: maintenance_schedules
+    description: "A preventive maintenance plan for an asset, recurring every interval_days"
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique schedule id"
+      company_id:
+        type: uuid
+        attributes: ["@required", "@exclude_from_foreign_key_check"]
+        description: "Org owner # logical FK to organization.Company.id"
+      asset_id:
+        type: uuid
+        attributes: ["@required", "@exclude_from_foreign_key_check"]
+        description: "The asset maintained # logical FK to asset.Asset.id"
+      name:
+        type: string
+        attributes: ["@required", "@length(max=200)"]
+        description: "Plan name (e.g. 500-hour service)"
+      interval_days:
+        type: integer
+        attributes: ["@required"]
+        description: "Recurrence interval in days (> 0)"
+      next_due_date:
+        type: date
+        attributes: ["@required"]
+        description: "When the next preventive visit is due"
+      is_active:
+        type: boolean
+        attributes: ["@default(true)"]
+        description: "Only active schedules generate visits"
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+    indexes:
+      - type: index
+        fields: [company_id, asset_id]
+      - type: index
+        fields: [is_active, next_due_date]
