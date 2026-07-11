@@ -12,8 +12,11 @@ use std::sync::Arc;
 // Import handlers
 use crate::presentation::http::{
     create_maintenance_schedule_routes,
+    create_maintenance_schedule_read_routes,
     create_maintenance_visit_routes,
-    create_maintenance_visit_part_routes
+    create_maintenance_visit_read_routes,
+    create_maintenance_visit_part_routes,
+    create_maintenance_visit_part_read_routes
 };
 
 // Import AppState for stateful routes
@@ -40,6 +43,18 @@ pub fn create_stateless_routes(module: &crate::MaintenanceModule) -> Router<()> 
         .merge(create_maintenance_schedule_routes(module.maintenance_schedule_service.clone()))
         .merge(create_maintenance_visit_routes(module.maintenance_visit_service.clone()))
         .merge(create_maintenance_visit_part_routes(module.maintenance_visit_part_service.clone()))
+}
+
+/// Read-only routes for the Maintenance module — every entity mounted READ-ONLY (the guarded base).
+///
+/// The generic `create_stateless_routes` exposes full mutable CRUD with no domain
+/// validation; this exposes only reads, so generic mutation can't bypass a write
+/// service's invariants. Extend it: `create_readonly_maintenance_routes(m).merge(my_validated_writes)`.
+pub fn create_readonly_maintenance_routes(module: &crate::MaintenanceModule) -> Router<()> {
+    Router::new()
+        .merge(create_maintenance_schedule_read_routes(module.maintenance_schedule_service.clone()))
+        .merge(create_maintenance_visit_read_routes(module.maintenance_visit_service.clone()))
+        .merge(create_maintenance_visit_part_read_routes(module.maintenance_visit_part_service.clone()))
 }
 
 /// Get all routes (stateless) for the Maintenance module.
