@@ -7,9 +7,9 @@ CREATE TABLE IF NOT EXISTS maintenance.maintenance_visit_parts (
     id UUID NOT NULL DEFAULT gen_random_uuid(),
     visit_id UUID NOT NULL,
     item_id UUID NOT NULL,
-    quantity NUMERIC NOT NULL DEFAULT 0,
-    unit_cost NUMERIC NOT NULL DEFAULT 0,
-    amount NUMERIC NOT NULL DEFAULT 0,
+    quantity NUMERIC(18, 4) NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+    unit_cost NUMERIC(18, 2) NOT NULL DEFAULT 0 CHECK (unit_cost >= 0),
+    amount NUMERIC(18, 2) NOT NULL DEFAULT 0 CHECK (amount >= 0),
     metadata JSONB NOT NULL DEFAULT '{"created_at":null,"updated_at":null,"deleted_at":null,"created_by":null,"updated_by":null,"deleted_by":null}'::jsonb,
     PRIMARY KEY (id)
 );
