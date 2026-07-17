@@ -15,6 +15,13 @@ user_owned:
   - "src/application/service/maintenance_gl.rs"
   - "src/application/service/maintenance_ports.rs"
   - "src/application/service/maintenance_write_service.rs"
+  # Own the hand-written maintenance SQL (the schedule definition + its recurrence advance, the visit
+  # plan/freeze/complete CAS chain, the part set and its valuation write-back) that the write service
+  # orchestrates. Declared here — not renamed with a `_custom` suffix — so the generator skips them
+  # wholesale; this declaration is what makes editing them legitimate.
+  - "src/infrastructure/persistence/maintenance_schedule_repository.rs"
+  - "src/infrastructure/persistence/maintenance_visit_repository.rs"
+  - "src/infrastructure/persistence/maintenance_visit_part_repository.rs"
   - "tests/integrity_probes.rs"
   - "tests/maintenance_gl_seam.rs"
   - "tests/maintenance_golden_cases.rs"
