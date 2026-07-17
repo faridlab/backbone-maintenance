@@ -6,6 +6,7 @@
 //! producer**: `Dr Maintenance Expense (total) · Cr Inventory Parts (parts) · Cr Labor Payable (labor)`.
 //! Because `total = parts + labor`, it balances. Idempotent per visit. Money is IDR, 2dp, half-away.
 
+use backbone_orm::company_scope;
 use chrono::{NaiveDate, Utc};
 use rust_decimal::{Decimal, RoundingStrategy};
 use sqlx::{PgPool, Row};
@@ -82,13 +83,16 @@ impl MaintenanceWriteService {
             return Err(MaintenanceError::Invalid("interval_days must be positive".into()));
         }
         let id = Uuid::new_v4();
-        sqlx::query(
+        let ins_q = sqlx::query(
             r#"INSERT INTO maintenance.maintenance_schedules
                  (id, company_id, asset_id, name, interval_days, next_due_date, is_active)
                VALUES ($1,$2,$3,$4,$5,$6,true)"#,
         )
-        .bind(id).bind(s.company_id).bind(s.asset_id).bind(&s.name).bind(s.interval_days).bind(s.next_due_date)
-        .execute(&self.pool).await?;
+        .bind(id).bind(s.company_id).bind(s.asset_id).bind(&s.name).bind(s.interval_days).bind(s.next_due_date);
+        company_scope::with_company_scope(
+            Some(s.company_id),
+            company_scope::execute_scoped(&self.pool, ins_q),
+        ).await?;
         Ok(id)
     }
 
@@ -98,7 +102,7 @@ impl MaintenanceWriteService {
             return Err(MaintenanceError::Invalid("labor_cost must be non-negative".into()));
         }
         let id = Uuid::new_v4();
-        sqlx::query(
+        let ins_q = sqlx::query(
             r#"INSERT INTO maintenance.maintenance_visits
                  (id, company_id, asset_id, schedule_id, maintenance_type, status, warehouse_id,
                   warranty_claim_id, scheduled_date, labor_cost, parts_cost, total_cost,
@@ -107,8 +111,11 @@ impl MaintenanceWriteService {
         )
         .bind(id).bind(v.company_id).bind(v.asset_id).bind(v.schedule_id).bind(&v.maintenance_type)
         .bind(v.warehouse_id).bind(v.warranty_claim_id).bind(v.scheduled_date).bind(money(v.labor_cost))
-        .bind(v.maintenance_expense_account_id).bind(v.parts_inventory_account_id).bind(v.labor_payable_account_id)
-        .execute(&self.pool).await?;
+        .bind(v.maintenance_expense_account_id).bind(v.parts_inventory_account_id).bind(v.labor_payable_account_id);
+        company_scope::with_company_scope(
+            Some(v.company_id),
+            company_scope::execute_scoped(&self.pool, ins_q),
+        ).await?;
         Ok(id)
     }
 
@@ -117,9 +124,11 @@ impl MaintenanceWriteService {
         if quantity <= Decimal::ZERO {
             return Err(MaintenanceError::Invalid("part quantity must be positive".into()));
         }
-        let status: Option<String> = sqlx::query_scalar(
+        let status_q = sqlx::query_scalar(
             "SELECT status::text FROM maintenance.maintenance_visits WHERE id=$1 AND (metadata->>'deleted_at') IS NULL")
-            .bind(visit_id).fetch_optional(&self.pool).await?;
+            .bind(visit_id);
+        let status: Option<String> =
+            company_scope::fetch_optional_scalar_scoped(&self.pool, status_q).await?;
         // Parts may only be added while PLANNED. Once a visit is in_progress the set is FROZEN — that is the
         // state a crashed completion leaves behind, and a part added then would be replayed against the
         // line-agnostic idempotent inventory ack: physically consumed but never issued/costed/journaled
@@ -130,21 +139,23 @@ impl MaintenanceWriteService {
             _ => return Err(MaintenanceError::InvalidState("visit is not planned — the part set is frozen")),
         }
         let id = Uuid::new_v4();
-        sqlx::query(
+        let ins_q = sqlx::query(
             r#"INSERT INTO maintenance.maintenance_visit_parts (id, visit_id, item_id, quantity, unit_cost, amount)
                VALUES ($1,$2,$3,$4,0,0)"#,
         )
-        .bind(id).bind(visit_id).bind(item_id).bind(quantity).execute(&self.pool).await?;
+        .bind(id).bind(visit_id).bind(item_id).bind(quantity);
+        company_scope::execute_scoped(&self.pool, ins_q).await?;
         Ok(id)
     }
 
     /// Start a planned visit (planned → in_progress).
     pub async fn start_visit(&self, visit_id: Uuid) -> Result<(), MaintenanceError> {
-        let n = sqlx::query(
+        let upd_q = sqlx::query(
             r#"UPDATE maintenance.maintenance_visits SET status='in_progress'::visit_status
                WHERE id=$1 AND status='planned'::visit_status"#,
         )
-        .bind(visit_id).execute(&self.pool).await?;
+        .bind(visit_id);
+        let n = company_scope::execute_scoped(&self.pool, upd_q).await?;
         if n.rows_affected() != 1 {
             return Err(MaintenanceError::InvalidState("visit is not planned"));
         }
@@ -162,14 +173,16 @@ impl MaintenanceWriteService {
         sink: &dyn GlPostSink,
         events: &dyn MaintenanceEventSink,
     ) -> Result<CompleteOutcome, MaintenanceError> {
-        let v = sqlx::query(
+        let v_q = sqlx::query(
             r#"SELECT company_id, asset_id, status::text AS status, warehouse_id, labor_cost,
                       maintenance_expense_account_id, parts_inventory_account_id, labor_payable_account_id,
                       journal_id, total_cost, schedule_id, maintenance_type::text AS maintenance_type
                FROM maintenance.maintenance_visits WHERE id=$1 AND (metadata->>'deleted_at') IS NULL"#,
         )
-        .bind(visit_id).fetch_optional(&self.pool).await?
-        .ok_or(MaintenanceError::NotFound("visit"))?;
+        .bind(visit_id);
+        let v = company_scope::fetch_optional_row_scoped(&self.pool, v_q).await?
+            .ok_or(MaintenanceError::NotFound("visit"))?;
+        let company_id: Uuid = v.get("company_id");
         let status: String = v.get("status");
         if status == "completed" {
             return Ok(CompleteOutcome {
@@ -182,22 +195,29 @@ impl MaintenanceWriteService {
         // FREEZE the part set before any external effect: claim the visit to in_progress. `add_part` only
         // accepts a planned visit, so once claimed no line can be added — a crash-and-retry re-issues the
         // identical frozen set (maturity council 2026-07-10).
-        sqlx::query(
+        let freeze_q = sqlx::query(
             r#"UPDATE maintenance.maintenance_visits SET status='in_progress'::visit_status
                WHERE id=$1 AND status='planned'::visit_status"#,
         )
-        .bind(visit_id).execute(&self.pool).await?;
+        .bind(visit_id);
+        company_scope::with_company_scope(
+            Some(company_id),
+            company_scope::execute_scoped(&self.pool, freeze_q),
+        ).await?;
 
-        let company_id: Uuid = v.get("company_id");
         let asset_id: Uuid = v.get("asset_id");
         let labor_cost: Decimal = v.get("labor_cost");
         let schedule_id: Option<Uuid> = v.get("schedule_id");
         let maintenance_type: String = v.get("maintenance_type");
 
         // Issue the parts out of inventory (valued at moving-average). Idempotent per visit.
-        let part_rows = sqlx::query(
+        let part_rows_q = sqlx::query(
             "SELECT id, item_id, quantity FROM maintenance.maintenance_visit_parts WHERE visit_id=$1")
-            .bind(visit_id).fetch_all(&self.pool).await?;
+            .bind(visit_id);
+        let part_rows = company_scope::with_company_scope(
+            Some(company_id),
+            company_scope::fetch_all_rows_scoped(&self.pool, part_rows_q),
+        ).await?;
         let mut parts_cost = Decimal::ZERO;
         if !part_rows.is_empty() {
             let warehouse_id: Uuid = v.get::<Option<Uuid>, _>("warehouse_id")
@@ -211,12 +231,15 @@ impl MaintenanceWriteService {
             parts_cost = money(ack.total_value);
             // Write back the valued unit_cost/amount per line.
             for lv in &ack.lines {
-                sqlx::query(
+                let val_q = sqlx::query(
                     r#"UPDATE maintenance.maintenance_visit_parts SET unit_cost=$3, amount=$4
                        WHERE visit_id=$1 AND item_id=$2"#,
                 )
-                .bind(visit_id).bind(lv.item_id).bind(money(lv.rate)).bind(money(lv.value))
-                .execute(&self.pool).await?;
+                .bind(visit_id).bind(lv.item_id).bind(money(lv.rate)).bind(money(lv.value));
+                company_scope::with_company_scope(
+                    Some(company_id),
+                    company_scope::execute_scoped(&self.pool, val_q),
+                ).await?;
             }
         }
         let total_cost = labor_cost + parts_cost;
@@ -253,6 +276,8 @@ impl MaintenanceWriteService {
         }
 
         let mut tx = self.pool.begin().await?;
+        // The visit's own company — the completion tx writes visits/schedules/outbox behind the RLS fence.
+        company_scope::bind_company_on(&mut tx, company_id).await?;
         let moved = sqlx::query(
             r#"UPDATE maintenance.maintenance_visits
                SET status='completed'::visit_status, performed_date=$2, parts_cost=$3, total_cost=$4,
@@ -264,8 +289,12 @@ impl MaintenanceWriteService {
         if moved.rows_affected() != 1 {
             tx.rollback().await?;
             // Raced — re-read the winner.
-            let j: Option<Uuid> = sqlx::query_scalar("SELECT journal_id FROM maintenance.maintenance_visits WHERE id=$1")
-                .bind(visit_id).fetch_one(&self.pool).await?;
+            let j_q = sqlx::query_scalar("SELECT journal_id FROM maintenance.maintenance_visits WHERE id=$1")
+                .bind(visit_id);
+            let j: Option<Uuid> = company_scope::with_company_scope(
+                Some(company_id),
+                company_scope::fetch_one_scalar_scoped(&self.pool, j_q),
+            ).await?;
             return Ok(CompleteOutcome { visit_id, journal_id: j, total_cost, already: true });
         }
 
@@ -301,11 +330,12 @@ impl MaintenanceWriteService {
 
     /// Cancel a planned/in-progress visit.
     pub async fn cancel_visit(&self, visit_id: Uuid) -> Result<(), MaintenanceError> {
-        let n = sqlx::query(
+        let upd_q = sqlx::query(
             r#"UPDATE maintenance.maintenance_visits SET status='cancelled'::visit_status
                WHERE id=$1 AND status IN ('planned'::visit_status,'in_progress'::visit_status)"#,
         )
-        .bind(visit_id).execute(&self.pool).await?;
+        .bind(visit_id);
+        let n = company_scope::execute_scoped(&self.pool, upd_q).await?;
         if n.rows_affected() != 1 {
             return Err(MaintenanceError::InvalidState("visit is not open"));
         }
