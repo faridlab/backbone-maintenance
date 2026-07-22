@@ -292,7 +292,7 @@ impl MaintenanceWriteService {
             visit_id, company_id, asset_id, journal_id, labor_cost, parts_cost, total_cost,
         });
         let record = backbone_outbox::OutboxRecord::new(
-            "MaintenanceCompleted", "MaintenanceVisit", visit_id.to_string(),
+            "MaintenanceCompleted", "MaintenanceVisit", visit_id.to_string(), company_id,
             serde_json::to_value(&event).map_err(|e| MaintenanceError::Invalid(e.to_string()))?,
             Utc::now(),
         );
