@@ -106,6 +106,10 @@ models:
         type: uuid
         attributes: ["@id", "@default(uuid)"]
         description: "Unique line id"
+      company_id:
+        type: uuid
+        attributes: ["@required", "@exclude_from_foreign_key_check"]
+        description: "Org owner # logical FK to organization.Company.id; mirrors maintenance_visits.company_id (parent is fenced, so backfill is deterministic)"
       visit_id:
         type: uuid
         attributes: ["@required", "@foreign_key(MaintenanceVisit.id)"]

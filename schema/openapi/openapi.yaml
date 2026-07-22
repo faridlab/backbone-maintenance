@@ -1575,6 +1575,7 @@ components:
       type: object
       required:
         - id
+        - company_id
         - visit_id
         - item_id
         - quantity
@@ -1583,6 +1584,9 @@ components:
         - metadata
       properties:
         id:
+          type: string
+          format: uuid
+        company_id:
           type: string
           format: uuid
         visit_id:
@@ -1616,6 +1620,7 @@ components:
     CreateMaintenanceVisitPartRequest:
       type: object
       required:
+        - company_id
         - visit_id
         - item_id
         - quantity
@@ -1623,6 +1628,9 @@ components:
         - amount
         - metadata
       properties:
+        company_id:
+          type: string
+          format: uuid
         visit_id:
           type: string
           format: uuid
@@ -1641,6 +1649,7 @@ components:
     UpdateMaintenanceVisitPartRequest:
       type: object
       required:
+        - company_id
         - visit_id
         - item_id
         - quantity
@@ -1648,6 +1657,9 @@ components:
         - amount
         - metadata
       properties:
+        company_id:
+          type: string
+          format: uuid
         visit_id:
           type: string
           format: uuid
@@ -1666,6 +1678,9 @@ components:
     PatchMaintenanceVisitPartRequest:
       type: object
       properties:
+        company_id:
+          type: string
+          format: uuid
         visit_id:
           type: string
           format: uuid

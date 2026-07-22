@@ -181,6 +181,7 @@ impl From<MaintenanceVisitPartId> for Uuid {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MaintenanceVisitPartDto {
     pub id: MaintenanceVisitPartId,
+    pub company_id: Uuid,
     pub visit_id: Uuid,
     pub item_id: Uuid,
     pub quantity: Decimal,

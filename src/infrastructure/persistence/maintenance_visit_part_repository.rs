@@ -52,13 +52,16 @@ pub struct VisitPartRow {
 impl MaintenanceVisitPartRepository {
     /// Add a part line to a visit (quantity only; `unit_cost`/`amount` are valued on completion).
     ///
-    /// ID-only: no company argument. `execute_scoped` means it rides a connection carrying the caller's
-    /// `app.company_id`; the visit-status check the caller makes first is what fences the line to a
-    /// visit it may see.
+    /// `company_id` is bound on the INSERT so the row passes the `WITH CHECK` clause of the
+    /// maintenance_visit_parts RLS policy (ADR-0010 Decision A). The caller threads the in-scope
+    /// company (the visit's owner) and wraps the call in `with_company_scope(Some(company_id), ...)`
+    /// so `app.company_id` is also set on the connection — both the WITH CHECK and the visit-status
+    /// check the caller makes first fence the line to a visit it may see.
     pub async fn insert_part(
         &self,
         pool: &PgPool,
         id: Uuid,
+        company_id: Uuid,
         visit_id: Uuid,
         item_id: Uuid,
         quantity: Decimal,
@@ -66,10 +69,11 @@ impl MaintenanceVisitPartRepository {
         company_scope::execute_scoped(
             pool,
             sqlx::query(
-                r#"INSERT INTO maintenance.maintenance_visit_parts (id, visit_id, item_id, quantity, unit_cost, amount)
-                   VALUES ($1,$2,$3,$4,0,0)"#,
+                r#"INSERT INTO maintenance.maintenance_visit_parts
+                       (id, company_id, visit_id, item_id, quantity, unit_cost, amount)
+                   VALUES ($1,$2,$3,$4,$5,0,0)"#,
             )
-            .bind(id).bind(visit_id).bind(item_id).bind(quantity),
+            .bind(id).bind(company_id).bind(visit_id).bind(item_id).bind(quantity),
         )
         .await?;
         Ok(())

@@ -139,18 +139,24 @@ impl MaintenanceWriteService {
         if quantity <= Decimal::ZERO {
             return Err(MaintenanceError::Invalid("part quantity must be positive".into()));
         }
-        let status = self.visits.fetch_status(&self.pool, visit_id).await?;
+        let v = self.visits.fetch_for_completion(&self.pool, visit_id).await?
+            .ok_or(MaintenanceError::NotFound("visit"))?;
         // Parts may only be added while PLANNED. Once a visit is in_progress the set is FROZEN — that is the
         // state a crashed completion leaves behind, and a part added then would be replayed against the
         // line-agnostic idempotent inventory ack: physically consumed but never issued/costed/journaled
         // (maturity council 2026-07-10). So the line set can never widen after completion begins.
-        match status.as_deref() {
-            None => return Err(MaintenanceError::NotFound("visit")),
-            Some("planned") => {}
+        match v.status.as_str() {
+            "planned" => {}
             _ => return Err(MaintenanceError::InvalidState("visit is not planned — the part set is frozen")),
         }
+        // The part line inherits the visit's company (maintenance_visit_parts is fenced — ADR-0010
+        // Decision A). Bind that company on the INSERT and on the scope so the RLS WITH CHECK passes.
         let id = Uuid::new_v4();
-        self.parts.insert_part(&self.pool, id, visit_id, item_id, quantity).await?;
+        let company_id = v.company_id;
+        company_scope::with_company_scope(
+            Some(company_id),
+            self.parts.insert_part(&self.pool, id, company_id, visit_id, item_id, quantity),
+        ).await?;
         Ok(id)
     }
 
