@@ -98,7 +98,6 @@ pub struct UpdateMaintenanceVisitDto {
     pub schedule_id: Option<Uuid>,
     #[serde(alias = "maintenance_type")]
     pub maintenance_type: MaintenanceType,
-    pub status: VisitStatus,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "warehouse_id")]
     pub warehouse_id: Option<Uuid>,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "warranty_claim_id")]
@@ -110,20 +109,12 @@ pub struct UpdateMaintenanceVisitDto {
     pub performed_date: Option<NaiveDate>,
     #[serde(alias = "labor_cost")]
     pub labor_cost: Decimal,
-    #[serde(alias = "parts_cost")]
-    pub parts_cost: Decimal,
-    #[serde(alias = "total_cost")]
-    pub total_cost: Decimal,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "maintenance_expense_account_id")]
     pub maintenance_expense_account_id: Option<Uuid>,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "parts_inventory_account_id")]
     pub parts_inventory_account_id: Option<Uuid>,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "labor_payable_account_id")]
     pub labor_payable_account_id: Option<Uuid>,
-    #[serde(default, skip_serializing_if = "Option::is_none", alias = "journal_id")]
-    pub journal_id: Option<Uuid>,
-    #[serde(default, skip_serializing_if = "Option::is_none", alias = "accounting_post_id")]
-    pub accounting_post_id: Option<Uuid>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub notes: Option<String>,
 }
@@ -151,8 +142,6 @@ pub struct PatchMaintenanceVisitDto {
     pub schedule_id: Option<Uuid>,
     #[serde(skip_serializing_if = "Option::is_none", alias = "maintenance_type")]
     pub maintenance_type: Option<MaintenanceType>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub status: Option<VisitStatus>,
     #[serde(skip_serializing_if = "Option::is_none", alias = "warehouse_id")]
     pub warehouse_id: Option<Uuid>,
     #[serde(skip_serializing_if = "Option::is_none", alias = "warranty_claim_id")]
@@ -164,20 +153,12 @@ pub struct PatchMaintenanceVisitDto {
     pub performed_date: Option<NaiveDate>,
     #[serde(skip_serializing_if = "Option::is_none", alias = "labor_cost")]
     pub labor_cost: Option<Decimal>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "parts_cost")]
-    pub parts_cost: Option<Decimal>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "total_cost")]
-    pub total_cost: Option<Decimal>,
     #[serde(skip_serializing_if = "Option::is_none", alias = "maintenance_expense_account_id")]
     pub maintenance_expense_account_id: Option<Uuid>,
     #[serde(skip_serializing_if = "Option::is_none", alias = "parts_inventory_account_id")]
     pub parts_inventory_account_id: Option<Uuid>,
     #[serde(skip_serializing_if = "Option::is_none", alias = "labor_payable_account_id")]
     pub labor_payable_account_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "journal_id")]
-    pub journal_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "accounting_post_id")]
-    pub accounting_post_id: Option<Uuid>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub notes: Option<String>,
 }
@@ -185,7 +166,7 @@ pub struct PatchMaintenanceVisitDto {
 impl PatchMaintenanceVisitDto {
     /// Check if any field is set
     pub fn has_changes(&self) -> bool {
-        self.company_id.is_some() || self.asset_id.is_some() || self.schedule_id.is_some() || self.maintenance_type.is_some() || self.status.is_some() || self.warehouse_id.is_some() || self.warranty_claim_id.is_some() || self.scheduled_date.is_some() || self.performed_date.is_some() || self.labor_cost.is_some() || self.parts_cost.is_some() || self.total_cost.is_some() || self.maintenance_expense_account_id.is_some() || self.parts_inventory_account_id.is_some() || self.labor_payable_account_id.is_some() || self.journal_id.is_some() || self.accounting_post_id.is_some() || self.notes.is_some()
+        self.company_id.is_some() || self.asset_id.is_some() || self.schedule_id.is_some() || self.maintenance_type.is_some() || self.warehouse_id.is_some() || self.warranty_claim_id.is_some() || self.scheduled_date.is_some() || self.performed_date.is_some() || self.labor_cost.is_some() || self.maintenance_expense_account_id.is_some() || self.parts_inventory_account_id.is_some() || self.labor_payable_account_id.is_some() || self.notes.is_some()
     }
 }
 
@@ -397,19 +378,14 @@ impl backbone_core::ApplyUpdateDto<UpdateMaintenanceVisitDto> for MaintenanceVis
         self.asset_id = dto.asset_id;
         self.schedule_id = dto.schedule_id;
         self.maintenance_type = dto.maintenance_type;
-        self.status = dto.status;
         self.warehouse_id = dto.warehouse_id;
         self.warranty_claim_id = dto.warranty_claim_id;
         self.scheduled_date = dto.scheduled_date;
         self.performed_date = dto.performed_date;
         self.labor_cost = dto.labor_cost;
-        self.parts_cost = dto.parts_cost;
-        self.total_cost = dto.total_cost;
         self.maintenance_expense_account_id = dto.maintenance_expense_account_id;
         self.parts_inventory_account_id = dto.parts_inventory_account_id;
         self.labor_payable_account_id = dto.labor_payable_account_id;
-        self.journal_id = dto.journal_id;
-        self.accounting_post_id = dto.accounting_post_id;
         self.notes = dto.notes;
         Ok(self)
     }

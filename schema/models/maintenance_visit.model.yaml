@@ -35,7 +35,7 @@ models:
         description: "preventive (scheduled) | corrective (ad-hoc)"
       status:
         type: VisitStatus
-        attributes: ["@required", "@default(planned)"]
+        attributes: ["@required", "@default(planned)", "@immutable"]
         description: "planned → in_progress → completed | cancelled"
       warehouse_id:
         type: uuid?
@@ -58,11 +58,11 @@ models:
         description: "Labor cost of the visit (IDR)"
       parts_cost:
         type: decimal
-        attributes: ["@default(0)", "@precision(18,2)", "@non_negative"]
+        attributes: ["@default(0)", "@precision(18,2)", "@non_negative", "@immutable"]
         description: "Σ parts value issued from inventory (inventory's moving-average number)"
       total_cost:
         type: decimal
-        attributes: ["@default(0)", "@precision(18,2)", "@non_negative"]
+        attributes: ["@default(0)", "@precision(18,2)", "@non_negative", "@immutable"]
         description: "labor_cost + parts_cost"
       maintenance_expense_account_id:
         type: uuid?
@@ -78,11 +78,11 @@ models:
         description: "Cr account for labor # logical FK to accounting.Account.id"
       journal_id:
         type: uuid?
-        attributes: ["@exclude_from_foreign_key_check"]
+        attributes: ["@exclude_from_foreign_key_check", "@immutable"]
         description: "The posted journal # logical FK to accounting.Journal.id"
       accounting_post_id:
         type: uuid?
-        attributes: ["@exclude_from_foreign_key_check"]
+        attributes: ["@exclude_from_foreign_key_check", "@immutable"]
         description: "The AccountingPost id # logical FK to accounting.AccountingPost.id"
       notes:
         type: string?
@@ -124,11 +124,11 @@ models:
         description: "Quantity used"
       unit_cost:
         type: decimal
-        attributes: ["@default(0)", "@precision(18,2)", "@non_negative"]
+        attributes: ["@default(0)", "@precision(18,2)", "@non_negative", "@immutable"]
         description: "Valued unit cost from inventory (set on completion)"
       amount:
         type: decimal
-        attributes: ["@default(0)", "@precision(18,2)", "@non_negative"]
+        attributes: ["@default(0)", "@precision(18,2)", "@non_negative", "@immutable"]
         description: "quantity × unit_cost (set on completion)"
       metadata:
         type: Metadata

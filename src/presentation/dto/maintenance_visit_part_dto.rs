@@ -71,9 +71,6 @@ pub struct UpdateMaintenanceVisitPartDto {
     #[serde(alias = "item_id")]
     pub item_id: Uuid,
     pub quantity: Decimal,
-    #[serde(alias = "unit_cost")]
-    pub unit_cost: Decimal,
-    pub amount: Decimal,
 }
 
 // =============================================================================
@@ -100,16 +97,12 @@ pub struct PatchMaintenanceVisitPartDto {
     pub item_id: Option<Uuid>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub quantity: Option<Decimal>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "unit_cost")]
-    pub unit_cost: Option<Decimal>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub amount: Option<Decimal>,
 }
 
 impl PatchMaintenanceVisitPartDto {
     /// Check if any field is set
     pub fn has_changes(&self) -> bool {
-        self.company_id.is_some() || self.visit_id.is_some() || self.item_id.is_some() || self.quantity.is_some() || self.unit_cost.is_some() || self.amount.is_some()
+        self.company_id.is_some() || self.visit_id.is_some() || self.item_id.is_some() || self.quantity.is_some()
     }
 }
 
@@ -273,8 +266,6 @@ impl backbone_core::ApplyUpdateDto<UpdateMaintenanceVisitPartDto> for Maintenanc
         self.visit_id = dto.visit_id;
         self.item_id = dto.item_id;
         self.quantity = dto.quantity;
-        self.unit_cost = dto.unit_cost;
-        self.amount = dto.amount;
         Ok(self)
     }
 }
