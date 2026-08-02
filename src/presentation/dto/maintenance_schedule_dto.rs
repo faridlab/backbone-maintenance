@@ -300,3 +300,4 @@ impl backbone_core::ApplyUpdateDto<UpdateMaintenanceScheduleDto> for Maintenance
 // Add custom DTOs specific to MaintenanceSchedule here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

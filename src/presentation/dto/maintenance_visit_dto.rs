@@ -423,3 +423,4 @@ impl backbone_core::ApplyUpdateDto<UpdateMaintenanceVisitDto> for MaintenanceVis
 // Add custom DTOs specific to MaintenanceVisit here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+
