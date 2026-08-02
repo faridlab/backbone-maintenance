@@ -52,4 +52,31 @@ impl crate::MaintenanceModule {
     pub fn query_service(&self) -> std::sync::Arc<dyn crate::exports::MaintenanceQueryService> {
         self.query.clone()
     }
+
+    /// The validated, GL/inventory-backed visit write surface — plan/start/add-part/complete/cancel.
+    /// These are the only verbs that may change a visit's state; compose the production surface as
+    /// `module.read_only_routes().merge(module.lifecycle_routes())` (reads + validated writes). Do
+    /// NOT merge with [`crate::MaintenanceModule::all_crud_routes`] — both mount `POST /maintenance_visits`.
+    ///
+    /// Requires a `GlPostSink` and an `InventoryPort` supplied via the builder
+    /// ([`crate::MaintenanceModuleBuilder::with_gl_sink`] / `with_inventory_port`); missing either
+    /// is a wiring error and panics at startup. The event sink defaults to `LoggingSink`.
+    pub fn lifecycle_routes(&self) -> Router {
+        use crate::presentation::http::{create_maintenance_lifecycle_routes, MaintenanceLifecycleState};
+
+        let gl = self.gl_sink.clone().expect(
+            "MaintenanceModule::lifecycle_routes() requires a GlPostSink — pass one via \
+             MaintenanceModuleBuilder::with_gl_sink(...)",
+        );
+        let inventory = self.inventory_port.clone().expect(
+            "MaintenanceModule::lifecycle_routes() requires an InventoryPort — pass one via \
+             MaintenanceModuleBuilder::with_inventory_port(...)",
+        );
+        create_maintenance_lifecycle_routes(MaintenanceLifecycleState {
+            write_svc: self.write_svc.clone(),
+            inventory,
+            gl,
+            event_sink: self.event_sink.clone(),
+        })
+    }
 }

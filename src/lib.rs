@@ -45,6 +45,13 @@ pub use application::service::MaintenanceVisitPartService;
 // Re-exports - Workflows
 pub use application::workflows::*;
 
+// <<< CUSTOM
+// Committed write-side contract: the engine + its port traits, re-exported so a consuming service
+// reaches them as `maintenance::GlPostSink` etc. rather than deep module paths.
+pub use application::service::{
+    GlPostSink, InventoryPort, LoggingSink, MaintenanceEventSink, MaintenanceWriteService,
+};
+// END CUSTOM
 use std::sync::Arc;
 use axum::Router;
 use sqlx::PgPool;
@@ -68,6 +75,12 @@ pub struct MaintenanceModule {
     // <<< CUSTOM FIELDS
     /// The realized published read contract for sibling modules.
     pub(crate) query: Arc<dyn crate::exports::MaintenanceQueryService>,
+    /// The validated visit write engine + the ports its completion verb posts through. The ports are
+    /// `Option` because only `lifecycle_routes()` needs them — mounting it fails fast if unset.
+    pub(crate) write_svc: Arc<application::service::MaintenanceWriteService>,
+    pub(crate) gl_sink: Option<Arc<dyn application::service::GlPostSink>>,
+    pub(crate) inventory_port: Option<Arc<dyn application::service::InventoryPort>>,
+    pub(crate) event_sink: Arc<dyn application::service::MaintenanceEventSink>,
     // END CUSTOM
 }
 
@@ -109,6 +122,11 @@ impl MaintenanceModule {
 /// Builder for MaintenanceModule
 pub struct MaintenanceModuleBuilder {
     db_pool: Option<PgPool>,
+    // <<< CUSTOM
+    gl_sink: Option<Arc<dyn application::service::GlPostSink>>,
+    inventory_port: Option<Arc<dyn application::service::InventoryPort>>,
+    event_sink: Option<Arc<dyn application::service::MaintenanceEventSink>>,
+    // END CUSTOM
 }
 
 impl MaintenanceModuleBuilder {
@@ -116,6 +134,11 @@ impl MaintenanceModuleBuilder {
     pub fn new() -> Self {
         Self {
             db_pool: None,
+            // <<< CUSTOM
+            gl_sink: None,
+            inventory_port: None,
+            event_sink: None,
+            // END CUSTOM
         }
     }
 
@@ -126,6 +149,32 @@ impl MaintenanceModuleBuilder {
     }
 
     // <<< CUSTOM - custom builder methods
+    /// Supply the GL-posting sink the completion verb posts the cost journal through. Required to
+    /// mount [`crate::MaintenanceModule::lifecycle_routes`]; a composing service adapts its
+    /// accounting `PostingService` to [`crate::GlPostSink`].
+    pub fn with_gl_sink(mut self, sink: Arc<dyn application::service::GlPostSink>) -> Self {
+        self.gl_sink = Some(sink);
+        self
+    }
+
+    /// Supply the inventory port the completion verb issues parts through (valued at inventory's
+    /// moving-average). Required to mount [`crate::MaintenanceModule::lifecycle_routes`].
+    pub fn with_inventory_port(
+        mut self,
+        port: Arc<dyn application::service::InventoryPort>,
+    ) -> Self {
+        self.inventory_port = Some(port);
+        self
+    }
+
+    /// Supply the domain-event sink. Defaults to a logging sink if unset.
+    pub fn with_event_sink(
+        mut self,
+        sink: Arc<dyn application::service::MaintenanceEventSink>,
+    ) -> Self {
+        self.event_sink = Some(sink);
+        self
+    }
     // END CUSTOM
 
     /// Build the module with configured dependencies
@@ -147,6 +196,13 @@ impl MaintenanceModuleBuilder {
         // <<< CUSTOM
         let query: Arc<dyn crate::exports::MaintenanceQueryService> =
             Arc::new(application::service::MaintenanceQueryServiceImpl::new(db_pool.clone()));
+        // <<< CUSTOM
+        let write_svc =
+            Arc::new(application::service::MaintenanceWriteService::new(db_pool.clone()));
+        let event_sink: Arc<dyn application::service::MaintenanceEventSink> = self
+            .event_sink
+            .unwrap_or_else(|| Arc::new(application::service::LoggingSink));
+        // END CUSTOM
         // END CUSTOM
 
         // <<< CUSTOM
@@ -158,6 +214,10 @@ impl MaintenanceModuleBuilder {
             maintenance_visit_part_service,
             // <<< CUSTOM
             query,
+            write_svc,
+            gl_sink: self.gl_sink,
+            inventory_port: self.inventory_port,
+            event_sink,
             // END CUSTOM
         })
     }

@@ -30,7 +30,9 @@ user_owned:
   # Hand-authored `impl MaintenanceModule` extension + its regression test (council 2026-08-02 rec #1):
   # the safe default route composer that closes the visit invariant-bypass.
   - "src/maintenance_module_ext.rs"
+  - "src/presentation/http/maintenance_lifecycle_handler.rs"
   - "tests/guarded_routes_test.rs"
+  - "tests/lifecycle_routes_test.rs"
   # Hand-authored behavior (services + their HTTP surface). Examples:
   # - "src/application/service/onboarding_service.rs"
   # - "src/presentation/http/guarded_routes.rs"

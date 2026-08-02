@@ -10,6 +10,7 @@ pub mod maintenance_visit_handler;
 pub mod maintenance_visit_part_handler;
 
 // <<< CUSTOM
+pub mod maintenance_lifecycle_handler;
 // END CUSTOM
 
 // Re-exports
@@ -17,4 +18,5 @@ pub use maintenance_schedule_handler::{create_maintenance_schedule_routes, creat
 pub use maintenance_visit_handler::{create_maintenance_visit_routes, create_maintenance_visit_read_routes, create_maintenance_visit_write_routes};
 pub use maintenance_visit_part_handler::{create_maintenance_visit_part_routes, create_maintenance_visit_part_read_routes, create_maintenance_visit_part_write_routes};
 // <<< CUSTOM
+pub use maintenance_lifecycle_handler::{create_maintenance_lifecycle_routes, MaintenanceLifecycleState};
 // END CUSTOM
