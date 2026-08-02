@@ -16,6 +16,7 @@ pub mod maintenance_gl;
 pub mod maintenance_ports;
 pub mod maintenance_events;
 pub mod maintenance_write_service;
+pub mod maintenance_query_service;
 // END CUSTOM
 
 pub use maintenance_schedule_service::MaintenanceScheduleService;
@@ -26,4 +27,5 @@ pub use maintenance_gl::{AccountingPostEnvelope, GlPostAck, GlPostLine, GlPostRe
 pub use maintenance_ports::{InventoryPort, InventoryRejected, IssueAck, IssueLine, IssuedLineValue, PartsIssue};
 pub use maintenance_events::{LoggingSink, MaintenanceCompleted, MaintenanceEvent, MaintenanceEventSink};
 pub use maintenance_write_service::{CompleteOutcome, MaintenanceError, MaintenanceWriteService, NewSchedule, NewVisit};
+pub use maintenance_query_service::MaintenanceQueryServiceImpl;
 // END CUSTOM

@@ -23,6 +23,14 @@ pub mod infrastructure;
 pub mod application;
 pub mod presentation;
 pub mod seeders;
+pub mod exports;
+
+// <<< CUSTOM
+// Hand-authored `impl MaintenanceModule` extension (the safe default route composer). Kept OUT of
+// lib.rs's generated impl region so `metaphor make` regen can't clobber it — see
+// maintenance_module_ext.rs.
+pub mod maintenance_module_ext;
+// END CUSTOM
 
 // Re-exports for convenience - Domain entities
 pub use domain::entity::*;
@@ -55,9 +63,13 @@ use sqlx::PgPool;
 /// let router = maintenance.all_crud_routes();
 /// ```
 pub struct MaintenanceModule {
-    pub maintenance_schedule_service: Arc<MaintenanceScheduleService>,
-    pub maintenance_visit_service: Arc<MaintenanceVisitService>,
-    pub maintenance_visit_part_service: Arc<MaintenanceVisitPartService>,
+    pub(crate) maintenance_schedule_service: Arc<MaintenanceScheduleService>,
+    pub(crate) maintenance_visit_service: Arc<MaintenanceVisitService>,
+    pub(crate) maintenance_visit_part_service: Arc<MaintenanceVisitPartService>,
+    // <<< CUSTOM FIELDS
+    /// The realized published read contract for sibling modules.
+    pub(crate) query: Arc<dyn crate::exports::MaintenanceQueryService>,
+    // END CUSTOM
 }
 
 impl MaintenanceModule {
@@ -135,6 +147,8 @@ impl MaintenanceModuleBuilder {
         let maintenance_visit_part_service = Arc::new(MaintenanceVisitPartService::with_repository(maintenance_visit_part_repository.clone()));
 
         // <<< CUSTOM
+        let query: Arc<dyn crate::exports::MaintenanceQueryService> =
+            Arc::new(application::service::MaintenanceQueryServiceImpl::new(db_pool.clone()));
         // END CUSTOM
 
         Ok(MaintenanceModule {
@@ -142,6 +156,7 @@ impl MaintenanceModuleBuilder {
             maintenance_visit_service,
             maintenance_visit_part_service,
             // <<< CUSTOM
+            query,
             // END CUSTOM
         })
     }
