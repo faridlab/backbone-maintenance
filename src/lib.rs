@@ -31,7 +31,6 @@ pub mod exports;
 // maintenance_module_ext.rs.
 pub mod maintenance_module_ext;
 // END CUSTOM
-
 // Re-exports for convenience - Domain entities
 pub use domain::entity::*;
 
@@ -145,10 +144,12 @@ impl MaintenanceModuleBuilder {
         // MaintenanceVisitPart service
         let maintenance_visit_part_repository = Arc::new(MaintenanceVisitPartRepository::new(db_pool.clone()));
         let maintenance_visit_part_service = Arc::new(MaintenanceVisitPartService::with_repository(maintenance_visit_part_repository.clone()));
-
         // <<< CUSTOM
         let query: Arc<dyn crate::exports::MaintenanceQueryService> =
             Arc::new(application::service::MaintenanceQueryServiceImpl::new(db_pool.clone()));
+        // END CUSTOM
+
+        // <<< CUSTOM
         // END CUSTOM
 
         Ok(MaintenanceModule {
