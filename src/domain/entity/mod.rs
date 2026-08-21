@@ -5,6 +5,7 @@
 pub mod maintenance_schedule;
 pub mod maintenance_visit;
 pub mod maintenance_visit_part;
+pub mod maintenance_schedule_status;
 pub mod maintenance_type;
 pub mod visit_status;
 
@@ -18,6 +19,7 @@ pub use maintenance_visit::MaintenanceVisitId;
 pub use maintenance_visit_part::MaintenanceVisitPart;
 pub use maintenance_visit_part::MaintenanceVisitPartBuilder;
 pub use maintenance_visit_part::MaintenanceVisitPartId;
+pub use maintenance_schedule_status::MaintenanceScheduleStatus;
 pub use maintenance_type::MaintenanceType;
 pub use visit_status::VisitStatus;
 

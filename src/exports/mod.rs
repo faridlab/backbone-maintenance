@@ -8,7 +8,7 @@
 //! ## Usage from other modules
 //!
 //! ```text
-//! use maintenance::exports::{MaintenanceScheduleDto, MaintenanceQueryService};
+//! use maintenance::exports::{MaintenanceScheduleDto};
 //! ```
 
 mod types;
@@ -36,9 +36,6 @@ pub use events::*;
 /// - `MaintenanceVisitPartDto` - Data transfer object for MaintenanceVisitPart
 /// - `MaintenanceVisitPartSummary` - Summary view of MaintenanceVisitPart
 /// - `MaintenanceVisitPartId` - Type-safe ID wrapper
-///
-/// ## Public Services
-/// - `MaintenanceQueryService` - Read-only queries
 ///
 /// ## Public Events
 /// - `MaintenanceScheduleCreatedEvent` - Published when MaintenanceSchedule is created

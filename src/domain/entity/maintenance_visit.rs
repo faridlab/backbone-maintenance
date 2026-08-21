@@ -78,7 +78,7 @@ pub struct MaintenanceVisit {
 impl MaintenanceVisit {
     /// Create a builder for MaintenanceVisit
     pub fn builder() -> MaintenanceVisitBuilder {
-        MaintenanceVisitBuilder::default()
+        <MaintenanceVisitBuilder as Default>::default()
     }
 
     /// Create a new MaintenanceVisit with required fields
@@ -513,8 +513,8 @@ impl MaintenanceVisitBuilder {
             company_id,
             asset_id,
             schedule_id: self.schedule_id,
-            maintenance_type: self.maintenance_type.unwrap_or(MaintenanceType::default()),
-            status: self.status.unwrap_or(VisitStatus::default()),
+            maintenance_type: self.maintenance_type.unwrap_or_default(),
+            status: self.status.unwrap_or_default(),
             warehouse_id: self.warehouse_id,
             warranty_claim_id: self.warranty_claim_id,
             scheduled_date,

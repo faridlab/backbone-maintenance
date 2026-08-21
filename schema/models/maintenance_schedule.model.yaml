@@ -36,10 +36,11 @@ models:
         type: date
         attributes: ["@required"]
         description: "When the next preventive visit is due"
-      is_active:
-        type: boolean
-        attributes: ["@default(true)"]
-        description: "Only active schedules generate visits"
+      # replaces is_active (boolean flipped to lifecycle enum)
+      status:
+        type: MaintenanceScheduleStatus
+        attributes: ["@default(active)"]
+        description: "Lifecycle (only active schedules generate visits)"
       metadata:
         type: Metadata
         attributes: ["@audit_metadata"]
@@ -48,4 +49,18 @@ models:
       - type: index
         fields: [company_id, asset_id]
       - type: index
-        fields: [is_active, next_due_date]
+        fields: [status, next_due_date]
+
+# =============================================================================
+# Enums
+# =============================================================================
+
+enums:
+  - name: MaintenanceScheduleStatus
+    description: "Lifecycle of a preventive maintenance plan"
+    variants:
+      - name: active
+        description: "The schedule generates visits as they fall due"
+        default: true
+      - name: inactive
+        description: "The schedule is paused or retired; no visits are generated"

@@ -54,7 +54,7 @@ pub struct MaintenanceScheduleDto {
     pub name: String,
     pub interval_days: i32,
     pub next_due_date: NaiveDate,
-    pub is_active: bool,
+    pub status: MaintenanceScheduleStatus,
     pub metadata: serde_json::Value,
 }
 
@@ -63,6 +63,7 @@ pub struct MaintenanceScheduleDto {
 pub struct MaintenanceScheduleSummary {
     pub id: MaintenanceScheduleId,
     pub name: String,
+    pub status: MaintenanceScheduleStatus,
 }
 
 /// Reference to MaintenanceSchedule for foreign key relationships

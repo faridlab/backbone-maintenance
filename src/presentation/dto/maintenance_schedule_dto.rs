@@ -18,6 +18,7 @@ use validator::Validate;
 
 use crate::domain::entity::MaintenanceSchedule;
 use crate::domain::entity::AuditMetadata;
+use crate::domain::entity::MaintenanceScheduleStatus;
 
 // =============================================================================
 // Create DTO
@@ -46,9 +47,7 @@ pub struct CreateMaintenanceScheduleDto {
     #[cfg_attr(feature = "openapi", schema(example = "2024-01-01"))]
     #[serde(alias = "next_due_date")]
     pub next_due_date: NaiveDate,
-    #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "is_active")]
-    pub is_active: bool,
+    pub status: MaintenanceScheduleStatus,
 }
 
 // =============================================================================
@@ -78,9 +77,7 @@ pub struct UpdateMaintenanceScheduleDto {
     #[cfg_attr(feature = "openapi", schema(example = "2024-01-01"))]
     #[serde(alias = "next_due_date")]
     pub next_due_date: NaiveDate,
-    #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(alias = "is_active")]
-    pub is_active: bool,
+    pub status: MaintenanceScheduleStatus,
 }
 
 // =============================================================================
@@ -111,15 +108,14 @@ pub struct PatchMaintenanceScheduleDto {
     #[cfg_attr(feature = "openapi", schema(example = "2024-01-01"))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "next_due_date")]
     pub next_due_date: Option<NaiveDate>,
-    #[cfg_attr(feature = "openapi", schema(example = true))]
-    #[serde(skip_serializing_if = "Option::is_none", alias = "is_active")]
-    pub is_active: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<MaintenanceScheduleStatus>,
 }
 
 impl PatchMaintenanceScheduleDto {
     /// Check if any field is set
     pub fn has_changes(&self) -> bool {
-        self.company_id.is_some() || self.asset_id.is_some() || self.name.is_some() || self.interval_days.is_some() || self.next_due_date.is_some() || self.is_active.is_some()
+        self.company_id.is_some() || self.asset_id.is_some() || self.name.is_some() || self.interval_days.is_some() || self.next_due_date.is_some() || self.status.is_some()
     }
 }
 
@@ -147,8 +143,7 @@ pub struct MaintenanceScheduleResponseDto {
     pub interval_days: i32,
     #[cfg_attr(feature = "openapi", schema(example = "2024-01-01"))]
     pub next_due_date: NaiveDate,
-    #[cfg_attr(feature = "openapi", schema(example = true))]
-    pub is_active: bool,
+    pub status: MaintenanceScheduleStatus,
     pub metadata: AuditMetadata,
 }
 
@@ -225,7 +220,7 @@ impl From<MaintenanceSchedule> for MaintenanceScheduleResponseDto {
             name: entity.name,
             interval_days: entity.interval_days,
             next_due_date: entity.next_due_date,
-            is_active: entity.is_active,
+            status: entity.status,
             metadata: entity.metadata,
         }
     }
@@ -253,7 +248,7 @@ impl From<CreateMaintenanceScheduleDto> for MaintenanceSchedule {
             name: dto.name,
             interval_days: dto.interval_days,
             next_due_date: dto.next_due_date,
-            is_active: dto.is_active,
+            status: dto.status,
             metadata: AuditMetadata::default(),
         }
     }
@@ -268,7 +263,7 @@ impl From<&MaintenanceSchedule> for MaintenanceScheduleResponseDto {
             name: entity.name.clone(),
             interval_days: entity.interval_days.clone(),
             next_due_date: entity.next_due_date.clone(),
-            is_active: entity.is_active.clone(),
+            status: entity.status.clone(),
             metadata: entity.metadata.clone(),
         }
     }
@@ -287,7 +282,7 @@ impl backbone_core::ApplyUpdateDto<UpdateMaintenanceScheduleDto> for Maintenance
         self.name = dto.name;
         self.interval_days = dto.interval_days;
         self.next_due_date = dto.next_due_date;
-        self.is_active = dto.is_active;
+        self.status = dto.status;
         Ok(self)
     }
 }
@@ -300,4 +295,3 @@ impl backbone_core::ApplyUpdateDto<UpdateMaintenanceScheduleDto> for Maintenance
 // Add custom DTOs specific to MaintenanceSchedule here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
-

@@ -29,7 +29,7 @@ impl TestDataGenerator for MaintenanceScheduleTestData {
             "name": format!("Test {}", Uuid::new_v4().to_string().split('-').next().unwrap()),
             "interval_days": 1,
             "next_due_date": Utc::now().format("%Y-%m-%d").to_string(),
-            "is_active": false,
+            "status": "active",
             "metadata": json!({}),
         })
     }
@@ -43,7 +43,7 @@ impl TestDataGenerator for MaintenanceScheduleTestData {
             "name": format!("Test {}", Uuid::new_v4().to_string().split('-').next().unwrap()),
             "interval_days": 1,
             "next_due_date": Utc::now().format("%Y-%m-%d").to_string(),
-            "is_active": false,
+            "status": "active",
             "metadata": json!({}),
         })
     }

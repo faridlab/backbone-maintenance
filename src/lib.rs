@@ -117,6 +117,24 @@ impl MaintenanceModule {
     pub fn routes(&self) -> Router {
         self.all_crud_routes()
     }
+
+    /// Read-only routes for every entity (GET endpoints only) — the safe base.
+    ///
+    /// Generic mutation can't reach here, so this surface cannot bypass a
+    /// validated write service's invariants. Use this as the production base and
+    /// merge validated write routes (or a write service's HTTP layer) onto it.
+    pub fn readonly_routes(&self) -> Router {
+        use presentation::http::{
+            create_maintenance_schedule_read_routes,
+            create_maintenance_visit_read_routes,
+            create_maintenance_visit_part_read_routes,
+        };
+
+        Router::new()
+            .merge(create_maintenance_schedule_read_routes(self.maintenance_schedule_service.clone()))
+            .merge(create_maintenance_visit_read_routes(self.maintenance_visit_service.clone()))
+            .merge(create_maintenance_visit_part_read_routes(self.maintenance_visit_part_service.clone()))
+    }
 }
 
 /// Builder for MaintenanceModule

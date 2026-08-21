@@ -57,6 +57,7 @@ impl MaintenanceQueryService for MaintenanceQueryServiceImpl {
         Ok(s.map(|s| MaintenanceScheduleSummary {
             id: MaintenanceScheduleId(s.id),
             name: s.name,
+            status: s.status,
         }))
     }
 
@@ -133,7 +134,7 @@ impl From<crate::domain::entity::MaintenanceSchedule> for MaintenanceScheduleDto
             name: s.name,
             interval_days: s.interval_days,
             next_due_date: s.next_due_date,
-            is_active: s.is_active,
+            status: s.status,
             metadata: serde_json::to_value(&s.metadata).unwrap_or_default(),
         }
     }

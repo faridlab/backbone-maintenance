@@ -51,4 +51,3 @@ async fn test_maintenance_visit_part_api() {
         panic!("{} tests failed", failed.len());
     }
 }
-

@@ -63,7 +63,7 @@ pub struct MaintenanceVisitPart {
 impl MaintenanceVisitPart {
     /// Create a builder for MaintenanceVisitPart
     pub fn builder() -> MaintenanceVisitPartBuilder {
-        MaintenanceVisitPartBuilder::default()
+        <MaintenanceVisitPartBuilder as Default>::default()
     }
 
     /// Create a new MaintenanceVisitPart with required fields

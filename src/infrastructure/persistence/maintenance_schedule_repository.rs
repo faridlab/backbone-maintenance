@@ -68,8 +68,8 @@ impl MaintenanceScheduleRepository {
             pool,
             sqlx::query(
                 r#"INSERT INTO maintenance.maintenance_schedules
-                     (id, company_id, asset_id, name, interval_days, next_due_date, is_active)
-                   VALUES ($1,$2,$3,$4,$5,$6,true)"#,
+                     (id, company_id, asset_id, name, interval_days, next_due_date, status)
+                   VALUES ($1,$2,$3,$4,$5,$6,'active')"#,
             )
             .bind(s.id).bind(s.company_id).bind(s.asset_id).bind(s.name)
             .bind(s.interval_days).bind(s.next_due_date),
@@ -93,7 +93,7 @@ impl MaintenanceScheduleRepository {
         sqlx::query(
             r#"UPDATE maintenance.maintenance_schedules
                SET next_due_date = ($2::date + make_interval(days => interval_days))::date
-               WHERE id=$1 AND is_active=true AND (metadata->>'deleted_at') IS NULL"#,
+               WHERE id=$1 AND status='active' AND (metadata->>'deleted_at') IS NULL"#,
         )
         .bind(schedule_id).bind(performed_date)
         .execute(conn)

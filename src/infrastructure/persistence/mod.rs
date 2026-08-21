@@ -10,6 +10,11 @@ mod maintenance_visit_part_repository;
 
 // Custom persistence modules
 // <<< CUSTOM
+// The hand-written maintenance SQL's parameter/projection types (see the three repositories, all
+// declared `user_owned` in metaphor.codegen.yaml).
+pub use maintenance_schedule_repository::NewScheduleRow;
+pub use maintenance_visit_part_repository::VisitPartRow;
+pub use maintenance_visit_repository::{NewVisitRow, VisitCompletion, VisitCompletionRow};
 // END CUSTOM
 
 // Re-exports
@@ -26,9 +31,4 @@ pub use backbone_orm::repository::{
 
 // Re-export custom persistence types
 // <<< CUSTOM
-// The hand-written maintenance SQL's parameter/projection types (see the three repositories, all
-// declared `user_owned` in metaphor.codegen.yaml).
-pub use maintenance_schedule_repository::NewScheduleRow;
-pub use maintenance_visit_part_repository::VisitPartRow;
-pub use maintenance_visit_repository::{NewVisitRow, VisitCompletion, VisitCompletionRow};
 // END CUSTOM

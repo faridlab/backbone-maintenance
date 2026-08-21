@@ -1128,7 +1128,7 @@ components:
         - name
         - interval_days
         - next_due_date
-        - is_active
+        - status
         - metadata
       properties:
         id:
@@ -1148,8 +1148,8 @@ components:
         next_due_date:
           type: string
           format: date
-        is_active:
-          type: boolean
+        status:
+          type: string
         metadata:
           type: object
 
@@ -1174,7 +1174,7 @@ components:
         - name
         - interval_days
         - next_due_date
-        - is_active
+        - status
         - metadata
       properties:
         company_id:
@@ -1191,8 +1191,8 @@ components:
         next_due_date:
           type: string
           format: date
-        is_active:
-          type: boolean
+        status:
+          type: string
         metadata:
           type: object
 
@@ -1204,7 +1204,7 @@ components:
         - name
         - interval_days
         - next_due_date
-        - is_active
+        - status
         - metadata
       properties:
         company_id:
@@ -1221,8 +1221,8 @@ components:
         next_due_date:
           type: string
           format: date
-        is_active:
-          type: boolean
+        status:
+          type: string
         metadata:
           type: object
 
@@ -1243,8 +1243,8 @@ components:
         next_due_date:
           type: string
           format: date
-        is_active:
-          type: boolean
+        status:
+          type: string
         metadata:
           type: object
 

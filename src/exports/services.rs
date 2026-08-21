@@ -5,15 +5,20 @@
 //! These services provide the public API for other modules.
 //! They only expose read operations - writes go through events.
 
+
+// ============================================================================
+// CUSTOM SERVICES
+// ============================================================================
+
+// <<< CUSTOM SERVICES START >>>
+// The generator emits no query-service trait for this module (it stopped emitting them for
+// hand-service modules), so the trait lives here — user-owned via the CUSTOM marker — and the
+// module builder hands out `Arc<dyn MaintenanceQueryService>` through it.
+
 use anyhow::Result;
 use async_trait::async_trait;
-use uuid::Uuid;
 
 use super::types::*;
-
-// ============================================================================
-// QUERY SERVICE TRAIT
-// ============================================================================
 
 /// Public query service for Maintenance module
 ///
@@ -47,13 +52,5 @@ pub trait MaintenanceQueryService: Send + Sync {
 
     /// Check if MaintenanceVisitPart exists
     async fn maintenance_visit_part_exists(&self, id: MaintenanceVisitPartId) -> Result<bool>;
-
 }
-
-// ============================================================================
-// CUSTOM SERVICES
-// ============================================================================
-
-// <<< CUSTOM SERVICES START >>>
-// Add custom public services here
 // <<< CUSTOM SERVICES END >>>

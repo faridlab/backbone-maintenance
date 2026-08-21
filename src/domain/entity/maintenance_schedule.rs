@@ -2,6 +2,8 @@ use chrono::{DateTime, Utc, NaiveDate};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
+
+use super::MaintenanceScheduleStatus;
 use super::AuditMetadata;
 
 /// Strongly-typed ID for MaintenanceSchedule
@@ -53,7 +55,7 @@ pub struct MaintenanceSchedule {
     pub name: String,
     pub interval_days: i32,
     pub next_due_date: NaiveDate,
-    pub is_active: bool,
+    pub status: MaintenanceScheduleStatus,
     #[serde(default)]
     #[sqlx(json)]
     pub metadata: AuditMetadata,
@@ -62,11 +64,11 @@ pub struct MaintenanceSchedule {
 impl MaintenanceSchedule {
     /// Create a builder for MaintenanceSchedule
     pub fn builder() -> MaintenanceScheduleBuilder {
-        MaintenanceScheduleBuilder::default()
+        <MaintenanceScheduleBuilder as Default>::default()
     }
 
     /// Create a new MaintenanceSchedule with required fields
-    pub fn new(company_id: Uuid, asset_id: Uuid, name: String, interval_days: i32, next_due_date: NaiveDate, is_active: bool) -> Self {
+    pub fn new(company_id: Uuid, asset_id: Uuid, name: String, interval_days: i32, next_due_date: NaiveDate, status: MaintenanceScheduleStatus) -> Self {
         Self {
             id: Uuid::new_v4(),
             company_id,
@@ -74,7 +76,7 @@ impl MaintenanceSchedule {
             name,
             interval_days,
             next_due_date,
-            is_active,
+            status,
             metadata: AuditMetadata::default(),
         }
     }
@@ -129,6 +131,11 @@ impl MaintenanceSchedule {
         self.metadata.deleted_by.as_ref()
     }
 
+    /// Get the current status
+    pub fn status(&self) -> &MaintenanceScheduleStatus {
+        &self.status
+    }
+
 
     // ==========================================================
     // Partial Update
@@ -153,8 +160,8 @@ impl MaintenanceSchedule {
                 "next_due_date" => {
                     if let Ok(v) = serde_json::from_value(value) { self.next_due_date = v; }
                 }
-                "is_active" => {
-                    if let Ok(v) = serde_json::from_value(value) { self.is_active = v; }
+                "status" => {
+                    if let Ok(v) = serde_json::from_value(value) { self.status = v; }
                 }
                 _ => {} // ignore unknown fields
             }
@@ -212,6 +219,7 @@ impl backbone_orm::EntityRepoMeta for MaintenanceSchedule {
         m.insert("id".to_string(), "uuid".to_string());
         m.insert("company_id".to_string(), "uuid".to_string());
         m.insert("asset_id".to_string(), "uuid".to_string());
+        m.insert("status".to_string(), "maintenance_schedule_status".to_string());
         m
     }
     fn search_fields() -> &'static [&'static str] {
@@ -233,7 +241,7 @@ pub struct MaintenanceScheduleBuilder {
     name: Option<String>,
     interval_days: Option<i32>,
     next_due_date: Option<NaiveDate>,
-    is_active: Option<bool>,
+    status: Option<MaintenanceScheduleStatus>,
 }
 
 impl MaintenanceScheduleBuilder {
@@ -267,9 +275,9 @@ impl MaintenanceScheduleBuilder {
         self
     }
 
-    /// Set the is_active field (default: `true`)
-    pub fn is_active(mut self, value: bool) -> Self {
-        self.is_active = Some(value);
+    /// Set the status field (default: `MaintenanceScheduleStatus::default()`)
+    pub fn status(mut self, value: MaintenanceScheduleStatus) -> Self {
+        self.status = Some(value);
         self
     }
 
@@ -290,7 +298,7 @@ impl MaintenanceScheduleBuilder {
             name,
             interval_days,
             next_due_date,
-            is_active: self.is_active.unwrap_or(true),
+            status: self.status.unwrap_or_default(),
             metadata: AuditMetadata::default(),
         })
     }
