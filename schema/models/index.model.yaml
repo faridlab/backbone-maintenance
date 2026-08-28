@@ -12,6 +12,13 @@
 module: maintenance
 version: 2
 schema: maintenance
+
+# ADR-0014 company fence: every business table in this module is company-private.
+# The row-level-security policies already ship in the migrations — schedules and
+# visits in 20260426220004_enable_company_rls.up.sql, visit parts in
+# 20260722100000_maintenance_visit_parts_company_rls.up.sql; this declares that
+# posture to the schema validator.
+company_fence: strict
 description: "maintenance domain module"
 
 config:
