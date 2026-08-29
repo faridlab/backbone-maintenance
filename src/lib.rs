@@ -38,9 +38,14 @@ pub use domain::entity::*;
 pub use infrastructure::persistence::*;
 
 // Re-exports - Application services
+pub use application::service::MaintenanceRequestService;
 pub use application::service::MaintenanceScheduleService;
+pub use application::service::MaintenanceStageService;
 pub use application::service::MaintenanceVisitService;
 pub use application::service::MaintenanceVisitPartService;
+
+// Re-exports - Validation
+pub use application::validator::{ValidationError, ValidationResult};
 
 // Re-exports - Workflows
 pub use application::workflows::*;
@@ -50,6 +55,7 @@ pub use application::workflows::*;
 // reaches them as `maintenance::GlPostSink` etc. rather than deep module paths.
 pub use application::service::{
     GlPostSink, InventoryPort, LoggingSink, MaintenanceEventSink, MaintenanceWriteService,
+    MaintenanceRequestWriteService,
 };
 // END CUSTOM
 use std::sync::Arc;
@@ -69,7 +75,9 @@ use sqlx::PgPool;
 /// let router = maintenance.all_crud_routes();
 /// ```
 pub struct MaintenanceModule {
+    pub(crate) maintenance_request_service: Arc<MaintenanceRequestService>,
     pub(crate) maintenance_schedule_service: Arc<MaintenanceScheduleService>,
+    pub(crate) maintenance_stage_service: Arc<MaintenanceStageService>,
     pub(crate) maintenance_visit_service: Arc<MaintenanceVisitService>,
     pub(crate) maintenance_visit_part_service: Arc<MaintenanceVisitPartService>,
     // <<< CUSTOM FIELDS
@@ -78,6 +86,9 @@ pub struct MaintenanceModule {
     /// The validated visit write engine + the ports its completion verb posts through. The ports are
     /// `Option` because only `lifecycle_routes()` needs them — mounting it fails fast if unset.
     pub(crate) write_svc: Arc<application::service::MaintenanceWriteService>,
+    /// The validated maintenance-request write engine (create / field update / stage transition +
+    /// clone-on-done successor spawn). No ports: the request family posts through the outbox.
+    pub(crate) request_write_svc: Arc<application::service::MaintenanceRequestWriteService>,
     pub(crate) gl_sink: Option<Arc<dyn application::service::GlPostSink>>,
     pub(crate) inventory_port: Option<Arc<dyn application::service::InventoryPort>>,
     pub(crate) event_sink: Arc<dyn application::service::MaintenanceEventSink>,
@@ -97,13 +108,17 @@ impl MaintenanceModule {
     /// real deployment; use this only in trusted/admin/seeding contexts.
     pub fn all_crud_routes(&self) -> Router {
         use presentation::http::{
+            create_maintenance_request_routes,
             create_maintenance_schedule_routes,
+            create_maintenance_stage_routes,
             create_maintenance_visit_routes,
             create_maintenance_visit_part_routes,
         };
 
         Router::new()
+            .merge(create_maintenance_request_routes(self.maintenance_request_service.clone()))
             .merge(create_maintenance_schedule_routes(self.maintenance_schedule_service.clone()))
+            .merge(create_maintenance_stage_routes(self.maintenance_stage_service.clone()))
             .merge(create_maintenance_visit_routes(self.maintenance_visit_service.clone()))
             .merge(create_maintenance_visit_part_routes(self.maintenance_visit_part_service.clone()))
     }
@@ -113,7 +128,7 @@ impl MaintenanceModule {
     /// mount exposes unguarded writes. Compose a guarded router (read + validated
     /// writes) for production, or call `all_crud_routes()` to opt into the full
     /// unguarded surface explicitly.
-    #[deprecated(note = "mounts unvalidated generic CRUD on every entity; compose a guarded router for production, or call all_crud_routes() for the intentional full/unguarded surface")]
+    #[deprecated(note = "mounts unvalidated generic CRUD; prefer readonly_routes() + validated writes, or all_crud_routes() for the full/unguarded surface")]
     pub fn routes(&self) -> Router {
         self.all_crud_routes()
     }
@@ -125,16 +140,23 @@ impl MaintenanceModule {
     /// merge validated write routes (or a write service's HTTP layer) onto it.
     pub fn readonly_routes(&self) -> Router {
         use presentation::http::{
+            create_maintenance_request_read_routes,
             create_maintenance_schedule_read_routes,
+            create_maintenance_stage_read_routes,
             create_maintenance_visit_read_routes,
             create_maintenance_visit_part_read_routes,
         };
 
         Router::new()
+            .merge(create_maintenance_request_read_routes(self.maintenance_request_service.clone()))
             .merge(create_maintenance_schedule_read_routes(self.maintenance_schedule_service.clone()))
+            .merge(create_maintenance_stage_read_routes(self.maintenance_stage_service.clone()))
             .merge(create_maintenance_visit_read_routes(self.maintenance_visit_service.clone()))
             .merge(create_maintenance_visit_part_read_routes(self.maintenance_visit_part_service.clone()))
     }
+
+    // <<< CUSTOM METHODS
+    // END CUSTOM
 }
 
 /// Builder for MaintenanceModule
@@ -152,11 +174,9 @@ impl MaintenanceModuleBuilder {
     pub fn new() -> Self {
         Self {
             db_pool: None,
-            // <<< CUSTOM
             gl_sink: None,
             inventory_port: None,
             event_sink: None,
-            // END CUSTOM
         }
     }
 
@@ -200,9 +220,17 @@ impl MaintenanceModuleBuilder {
         let db_pool = self.db_pool
             .ok_or_else(|| anyhow::anyhow!("Database pool not configured"))?;
 
+        // MaintenanceRequest service
+        let maintenance_request_repository = Arc::new(MaintenanceRequestRepository::new(db_pool.clone()));
+        let maintenance_request_service = Arc::new(MaintenanceRequestService::with_repository(maintenance_request_repository.clone()));
+
         // MaintenanceSchedule service
         let maintenance_schedule_repository = Arc::new(MaintenanceScheduleRepository::new(db_pool.clone()));
         let maintenance_schedule_service = Arc::new(MaintenanceScheduleService::with_repository(maintenance_schedule_repository.clone()));
+
+        // MaintenanceStage service
+        let maintenance_stage_repository = Arc::new(MaintenanceStageRepository::new(db_pool.clone()));
+        let maintenance_stage_service = Arc::new(MaintenanceStageService::with_repository(maintenance_stage_repository.clone()));
 
         // MaintenanceVisit service
         let maintenance_visit_repository = Arc::new(MaintenanceVisitRepository::new(db_pool.clone()));
@@ -211,32 +239,32 @@ impl MaintenanceModuleBuilder {
         // MaintenanceVisitPart service
         let maintenance_visit_part_repository = Arc::new(MaintenanceVisitPartRepository::new(db_pool.clone()));
         let maintenance_visit_part_service = Arc::new(MaintenanceVisitPartService::with_repository(maintenance_visit_part_repository.clone()));
+
         // <<< CUSTOM
         let query: Arc<dyn crate::exports::MaintenanceQueryService> =
             Arc::new(application::service::MaintenanceQueryServiceImpl::new(db_pool.clone()));
-        // <<< CUSTOM
         let write_svc =
             Arc::new(application::service::MaintenanceWriteService::new(db_pool.clone()));
+        let request_write_svc = Arc::new(
+            application::service::MaintenanceRequestWriteService::new(db_pool.clone()),
+        );
         let event_sink: Arc<dyn application::service::MaintenanceEventSink> = self
             .event_sink
             .unwrap_or_else(|| Arc::new(application::service::LoggingSink));
         // END CUSTOM
-        // END CUSTOM
-
-        // <<< CUSTOM
-        // END CUSTOM
 
         Ok(MaintenanceModule {
+            maintenance_request_service,
             maintenance_schedule_service,
+            maintenance_stage_service,
             maintenance_visit_service,
             maintenance_visit_part_service,
-            // <<< CUSTOM
             query,
             write_svc,
+            request_write_svc,
             gl_sink: self.gl_sink,
             inventory_port: self.inventory_port,
             event_sink,
-            // END CUSTOM
         })
     }
 }

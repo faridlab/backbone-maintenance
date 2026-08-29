@@ -1,0 +1,52 @@
+# =============================================================================
+# Domain: Maintenance
+# Entity: MaintenanceStage
+# Description: A maintenance-request pipeline stage. The seeded set is company-agnostic
+#              shared master data (NULL company_id — one stage set serves every company,
+#              the Odoo global stages; see the posture map in index.model.yaml). The
+#              request lifecycle is the stage reference (maintenance_requests.stage_id,
+#              lifecycle: stage_ref), never a stored status enum — the pipeline is
+#              whatever rows exist, so hardcoding the states would fight the config.
+#              `done` is THE canonical closed flag: close_date stamping, the
+#              clone-on-done recurrence trigger, and todo counts all key off it.
+#              Deliberately minimal — no legend fields, no archive (the module-standard
+#              soft delete deleted_at plays soft-hide; the Odoo convention break is
+#              not inherited).
+# =============================================================================
+
+models:
+  - name: MaintenanceStage
+    collection: maintenance_stages
+    description: "A maintenance-request stage (sort order + the canonical done flag)"
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique stage id"
+      company_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "Owning company; NULL = the shared stage set every company session sees # logical FK organization.Company.id"
+      name:
+        type: string
+        attributes: ["@required", "@length(max=200)"]
+        description: "Stage name (e.g. New Request)"
+      sequence:
+        type: integer
+        attributes: ["@default(20)"]
+        description: "Sort order; a new request enters the first stage by (sequence, id)"
+      fold:
+        type: boolean
+        attributes: ["@default(false)"]
+        description: "Folded stage; excluded from open-request counts"
+      done:
+        type: boolean
+        attributes: ["@default(false)"]
+        description: "THE canonical closed flag — close_date stamping, the recurrence trigger, and todo counts key off it"
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+    indexes:
+      - type: index
+        fields: [sequence, id]

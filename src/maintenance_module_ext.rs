@@ -11,32 +11,48 @@
 //! [`crate::MaintenanceModule::all_crud_routes`] mounts unguarded generic CRUD — including a PATCH
 //! whose DTO exposes `status` / `parts_cost` / `total_cost` / `journal_id` / `accounting_post_id` — on
 //! `MaintenanceVisit`, so a caller can flip a visit to `completed` with no inventory issue and no
-//! journal, routing around every invariant [`crate::MaintenanceWriteService`] enforces. The schema
-//! offers no attribute to restrict that PATCH and `all_crud_routes` is generated wholesale, so the
-//! closure is delivered here, at the composer: use [`Self::read_only_routes`] as the production
-//! surface; reserve `all_crud_routes()` / `routes()` for trusted/admin/seeding contexts. The validated
-//! write path (wiring `MaintenanceWriteService` into the module) is a separate, later step.
+//! journal, routing around every invariant [`crate::MaintenanceWriteService`] enforces. The same
+//! closure covers `MaintenanceRequest`: its generated PATCH would expose `stage_id`,
+//! `kanban_state`, `close_date`, and the successor markers — the exact columns the
+//! clone-on-done engine owns. The schema offers no attribute to restrict those PATCHes and
+//! `all_crud_routes` is generated wholesale, so the closure is delivered here, at the composer: use
+//! [`Self::read_only_routes`] as the production surface; reserve `all_crud_routes()` / `routes()` for
+//! trusted/admin/seeding contexts. The validated write path (wiring `MaintenanceWriteService` and
+//! `MaintenanceRequestWriteService` into the module) is a separate, later step.
 
 use axum::Router;
 
 impl crate::MaintenanceModule {
-    /// The safe default route surface: full CRUD on the `MaintenanceSchedule` master, and
-    /// **read-only** on the two engine-owned, cost/inventory-bearing tables (`MaintenanceVisit`,
-    /// `MaintenanceVisitPart`) whose state must only change through [`crate::MaintenanceWriteService`].
+    /// The safe default route surface: full CRUD on the two benign masters (`MaintenanceSchedule`,
+    /// `MaintenanceStage`), and **read-only** on the engine-owned tables (`MaintenanceVisit`,
+    /// `MaintenanceVisitPart`, `MaintenanceRequest`) whose state must only change through
+    /// [`crate::MaintenanceWriteService`] / [`crate::MaintenanceRequestWriteService`].
+    ///
+    /// Stage CRUD is mounted in full because stages are company-agnostic master data (shared across
+    /// the fence): creating/reordering them is an administrative act with no engine invariants, and
+    /// referential safety is enforced in the DB (RESTRICT on the request FK, plus the soft-delete
+    /// guard raising `maintenance_stage_in_use` while any live request still sits on the stage).
     ///
     /// Use this in place of the generated [`crate::MaintenanceModule::all_crud_routes`], which mounts
-    /// unguarded writes on the visit/part tables. Direct mirror of
+    /// unguarded writes on the visit/part/request tables. Direct mirror of
     /// `backbone-asset::AssetsModule::read_only_routes` (CRUD on the benign master, read-only on the
     /// engine-owned financial tables).
     pub fn read_only_routes(&self) -> Router {
         use crate::presentation::http::{
-            create_maintenance_schedule_routes, create_maintenance_visit_part_read_routes,
+            create_maintenance_request_read_routes, create_maintenance_schedule_routes,
+            create_maintenance_stage_routes, create_maintenance_visit_part_read_routes,
             create_maintenance_visit_read_routes,
         };
 
         Router::new()
             .merge(create_maintenance_schedule_routes(
                 self.maintenance_schedule_service.clone(),
+            ))
+            .merge(create_maintenance_stage_routes(
+                self.maintenance_stage_service.clone(),
+            ))
+            .merge(create_maintenance_request_read_routes(
+                self.maintenance_request_service.clone(),
             ))
             .merge(create_maintenance_visit_read_routes(
                 self.maintenance_visit_service.clone(),
@@ -62,7 +78,10 @@ impl crate::MaintenanceModule {
     /// ([`crate::MaintenanceModuleBuilder::with_gl_sink`] / `with_inventory_port`); missing either
     /// is a wiring error and panics at startup. The event sink defaults to `LoggingSink`.
     pub fn lifecycle_routes(&self) -> Router {
-        use crate::presentation::http::{create_maintenance_lifecycle_routes, MaintenanceLifecycleState};
+        use crate::presentation::http::{
+            create_maintenance_lifecycle_routes, create_maintenance_request_lifecycle_routes,
+            MaintenanceLifecycleState, MaintenanceRequestLifecycleState,
+        };
 
         let gl = self.gl_sink.clone().expect(
             "MaintenanceModule::lifecycle_routes() requires a GlPostSink — pass one via \
@@ -78,5 +97,11 @@ impl crate::MaintenanceModule {
             gl,
             event_sink: self.event_sink.clone(),
         })
+        .merge(create_maintenance_request_lifecycle_routes(
+            MaintenanceRequestLifecycleState {
+                write_svc: self.request_write_svc.clone(),
+                event_sink: self.event_sink.clone(),
+            },
+        ))
     }
 }

@@ -103,6 +103,11 @@ async fn mgc4_parts_valued_by_inventory() {
     let last = sink.events.lock().unwrap().last().cloned().unwrap();
     match last {
         MaintenanceEvent::MaintenanceCompleted(c) => assert_eq!(c.parts_cost, dec("10000")),
+        // The visit engine never emits the request-family events; listed so this match stays
+        // exhaustive as the event enum grows.
+        MaintenanceEvent::MaintenanceRequestStageChanged(_) | MaintenanceEvent::SuccessorSpawned(_) => {
+            panic!("visit completion must not emit request-family events")
+        }
     }
 }
 

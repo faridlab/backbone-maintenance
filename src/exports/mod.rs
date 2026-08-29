@@ -8,7 +8,7 @@
 //! ## Usage from other modules
 //!
 //! ```text
-//! use maintenance::exports::{MaintenanceScheduleDto};
+//! use maintenance::exports::{MaintenanceRequestDto};
 //! ```
 
 mod types;
@@ -27,9 +27,15 @@ pub use events::*;
 /// Summary of what this module exports
 ///
 /// ## Public Types
+/// - `MaintenanceRequestDto` - Data transfer object for MaintenanceRequest
+/// - `MaintenanceRequestSummary` - Summary view of MaintenanceRequest
+/// - `MaintenanceRequestId` - Type-safe ID wrapper
 /// - `MaintenanceScheduleDto` - Data transfer object for MaintenanceSchedule
 /// - `MaintenanceScheduleSummary` - Summary view of MaintenanceSchedule
 /// - `MaintenanceScheduleId` - Type-safe ID wrapper
+/// - `MaintenanceStageDto` - Data transfer object for MaintenanceStage
+/// - `MaintenanceStageSummary` - Summary view of MaintenanceStage
+/// - `MaintenanceStageId` - Type-safe ID wrapper
 /// - `MaintenanceVisitDto` - Data transfer object for MaintenanceVisit
 /// - `MaintenanceVisitSummary` - Summary view of MaintenanceVisit
 /// - `MaintenanceVisitId` - Type-safe ID wrapper
@@ -38,9 +44,15 @@ pub use events::*;
 /// - `MaintenanceVisitPartId` - Type-safe ID wrapper
 ///
 /// ## Public Events
+/// - `MaintenanceRequestCreatedEvent` - Published when MaintenanceRequest is created
+/// - `MaintenanceRequestUpdatedEvent` - Published when MaintenanceRequest is updated
+/// - `MaintenanceRequestDeletedEvent` - Published when MaintenanceRequest is deleted
 /// - `MaintenanceScheduleCreatedEvent` - Published when MaintenanceSchedule is created
 /// - `MaintenanceScheduleUpdatedEvent` - Published when MaintenanceSchedule is updated
 /// - `MaintenanceScheduleDeletedEvent` - Published when MaintenanceSchedule is deleted
+/// - `MaintenanceStageCreatedEvent` - Published when MaintenanceStage is created
+/// - `MaintenanceStageUpdatedEvent` - Published when MaintenanceStage is updated
+/// - `MaintenanceStageDeletedEvent` - Published when MaintenanceStage is deleted
 /// - `MaintenanceVisitCreatedEvent` - Published when MaintenanceVisit is created
 /// - `MaintenanceVisitUpdatedEvent` - Published when MaintenanceVisit is updated
 /// - `MaintenanceVisitDeletedEvent` - Published when MaintenanceVisit is deleted

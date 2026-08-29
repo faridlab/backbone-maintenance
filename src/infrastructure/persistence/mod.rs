@@ -4,21 +4,26 @@
 //!
 //! Uses backbone-orm's `DatabaseOperations<T>` trait.
 
+mod maintenance_request_repository;
 mod maintenance_schedule_repository;
+mod maintenance_stage_repository;
 mod maintenance_visit_repository;
 mod maintenance_visit_part_repository;
 
 // Custom persistence modules
 // <<< CUSTOM
-// The hand-written maintenance SQL's parameter/projection types (see the three repositories, all
+// The hand-written maintenance SQL's parameter/projection types (see the four repositories, all
 // declared `user_owned` in metaphor.codegen.yaml).
 pub use maintenance_schedule_repository::NewScheduleRow;
 pub use maintenance_visit_part_repository::VisitPartRow;
 pub use maintenance_visit_repository::{NewVisitRow, VisitCompletion, VisitCompletionRow};
+pub use maintenance_request_repository::{NewRequestRow, RequestFieldUpdates, RequestTransitionRow, StageRefRow};
 // END CUSTOM
 
 // Re-exports
+pub use maintenance_request_repository::MaintenanceRequestRepository;
 pub use maintenance_schedule_repository::MaintenanceScheduleRepository;
+pub use maintenance_stage_repository::MaintenanceStageRepository;
 pub use maintenance_visit_repository::MaintenanceVisitRepository;
 pub use maintenance_visit_part_repository::MaintenanceVisitPartRepository;
 

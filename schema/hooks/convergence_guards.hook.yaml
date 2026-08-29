@@ -1,0 +1,88 @@
+# =============================================================================
+# ConvergenceGuards — write-path guards for the maintenance request family
+# (maintenance_requests + maintenance_stages, migration 20260829150000).
+#
+# Every guard declares its enforcement layer (ADR-0015). The DB arms are the
+# raw-SQL backstops: table CHECKs fire on every INSERT/UPDATE regardless of which
+# column changed or which layer wrote it, and the two triggers carry the arms a
+# CHECK cannot express (they must read the stage table's done flag). The service
+# arms are the managed path — the maintenance request write service pre-checks
+# and returns typed 4xx errors instead of a DB rejection.
+#
+# NOT YET IN SCOPE (no referent this pass): G-MT1 (equipment serial unique) and
+# G-MT4 (category delete-protect) ride the equipment/category port that does not
+# exist — the equipment register is the read-side on asset.Asset. Their register
+# rows already carry the citations.
+# =============================================================================
+
+name: ConvergenceGuards
+model: MaintenanceRequest
+
+rules:
+  G-MT2:
+    when: [create, update]
+    condition: "schedule_end IS NULL OR schedule_date IS NULL OR schedule_end >= schedule_date"
+    message: "A request cannot be scheduled to finish before it starts."
+    code: request_schedule_end_before_start
+    severity: error
+    enforcement: both
+    justification: "DB arm: CHECK constraint on maintenance_requests. The fire-rule is WIDENED per ADR-0015 — a CHECK fires on every INSERT/UPDATE regardless of which column changed, so updating schedule_date past an existing schedule_end is caught too (the Odoo defect was ORM trigger-field narrowness: @api.constrains fired only on schedule_end writes). Service arm: the write service pre-checks on create AND on any update touching EITHER column."
+
+  G-MT3:
+    when: [create, update]
+    condition: "repeat_interval >= 1"
+    message: "A recurrence step must be at least one unit."
+    code: request_repeat_interval_below_one
+    severity: error
+    enforcement: both
+    justification: "DB arm: CHECK constraint on maintenance_requests (the Odoo guard was ORM-only). Service arm: friendly 422 from the write service before the write."
+
+  G-MT7:
+    when: [create, update]
+    condition: "repeat_type <> 'until' OR repeat_until IS NOT NULL"
+    message: "A recurrence bounded 'until' must state its repeat_until date."
+    code: request_repeat_until_missing
+    severity: error
+    enforcement: db
+    note: "The citation fence made structural: Odoo accepts repeat_type='until' with a null repeat_until and then silently never spawns (MTB-7, fenced — do not transcribe the latent bug). Here such a request is REJECTED at the DB, never silently non-spawning. The service adds a 422 pre-check for UX; the fence IS the guard."
+
+  G-MT8:
+    when: [create, update]
+    condition: "NOT (maintenance_type = 'corrective' AND recurring)"
+    message: "Only preventive maintenance may recur."
+    code: request_corrective_cannot_recur
+    severity: error
+    enforcement: both
+    justification: "DB arm: CHECK constraint on maintenance_requests (MTB-4). Service arm: typed 422 from the write service."
+
+  G-MT5:
+    when: [update]
+    condition: "a stage transition keeps stage-consistency: kanban_state resets to normal unless the caller set it in the same statement; close_date is stamped on entering a done stage and cleared on leaving; a non-done -> done transition of a preventive recurring request is refused unless it runs through the service verb"
+    message: "Stage transitions are trigger-consistent; closing a recurring preventive request requires the managed transition verb."
+    code: maintenance_recurring_close_requires_service_verb
+    severity: error
+    enforcement: both
+    justification: "The MTB-1/MTB-2 mechanism (kanban reset + close_date sync) and the recurrence raise live in one BEFORE INSERT OR UPDATE trigger on maintenance_requests. A CHECK cannot express close_date — it must reference the stage table's done flag — so the trigger is the mechanism; the trigger is a CONSISTENCY guard, not a security boundary. The managed path is the service verb, which sets the transaction-local app.maintenance_managed_transition flag before its CAS UPDATE; a raw-SQL close of a preventive recurring request raises maintenance_recurring_close_requires_service_verb because it would skip the successor spawn (anti-corruption, MTB-2). A raw stage change of any NON-recurring request passes through the trigger and still lands the correct kanban reset + close_date."
+
+  G-MT6:
+    when: [soft_delete]
+    condition: "no live maintenance_requests row (metadata->>'deleted_at' IS NULL) references the stage"
+    message: "A stage referenced by live requests cannot be deleted."
+    code: maintenance_stage_in_use
+    severity: error
+    enforcement: db
+    note: "The honest G-MT4 analog (G-MT4 itself guards an equipment CATEGORY delete, and no category entity exists this pass). Hard DELETE is blocked by the stage FK (ON DELETE RESTRICT); SOFT delete (metadata->>'deleted_at' set) of a referenced stage is blocked by a BEFORE UPDATE trigger on maintenance_stages raising maintenance_stage_in_use."
+
+  G-MT_STAGE_FK:
+    when: [create, update]
+    condition: "maintenance_requests.stage_id references an existing maintenance_stages row"
+    message: "The stage foreign key is real, ON DELETE RESTRICT."
+    code: request_stage_fk
+    severity: error
+    enforcement: db
+    note: "In-module REAL FK (the ondelete=restrict analog) — raw-SQL safe by construction: an insert or update pointing at a missing stage raises the FK violation."
+
+# Scheduled jobs: NONE. The request family's recurrence is the clone-on-done
+# engine inside the transition transaction — zero crons is a hard invariant of
+# this module family (ADR-0020: any future job would need a declared posture;
+# this pass expects none).

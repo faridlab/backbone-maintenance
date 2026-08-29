@@ -9,20 +9,26 @@ use axum::Router;
 use std::sync::Arc;
 
 use super::{
+    maintenance_request_handler::create_maintenance_request_routes,
     maintenance_schedule_handler::create_maintenance_schedule_routes,
+    maintenance_stage_handler::create_maintenance_stage_routes,
     maintenance_visit_handler::create_maintenance_visit_routes,
     maintenance_visit_part_handler::create_maintenance_visit_part_routes,
 };
 
 use crate::application::service::{
+    MaintenanceRequestService,
     MaintenanceScheduleService,
+    MaintenanceStageService,
     MaintenanceVisitService,
     MaintenanceVisitPartService,
 };
 
 /// Services collection for all CRUD endpoints
 pub struct HttpServices {
+    pub maintenance_request: Arc<MaintenanceRequestService>,
     pub maintenance_schedule: Arc<MaintenanceScheduleService>,
+    pub maintenance_stage: Arc<MaintenanceStageService>,
     pub maintenance_visit: Arc<MaintenanceVisitService>,
     pub maintenance_visit_part: Arc<MaintenanceVisitPartService>,
 }
@@ -44,8 +50,12 @@ pub struct HttpServices {
 /// 12. GET /api/v1/{collection}/:id/deleted - Get deleted by ID
 pub fn configure_routes(services: HttpServices) -> Router {
     Router::new()
+        // MaintenanceRequest routes (12 Backbone endpoints)
+        .merge(create_maintenance_request_routes(services.maintenance_request))
         // MaintenanceSchedule routes (12 Backbone endpoints)
         .merge(create_maintenance_schedule_routes(services.maintenance_schedule))
+        // MaintenanceStage routes (12 Backbone endpoints)
+        .merge(create_maintenance_stage_routes(services.maintenance_stage))
         // MaintenanceVisit routes (12 Backbone endpoints)
         .merge(create_maintenance_visit_routes(services.maintenance_visit))
         // MaintenanceVisitPart routes (12 Backbone endpoints)
@@ -56,8 +66,16 @@ pub fn configure_routes(services: HttpServices) -> Router {
 pub mod individual {
     use super::*;
 
+    pub fn maintenance_request_routes(service: Arc<MaintenanceRequestService>) -> Router {
+        create_maintenance_request_routes(service)
+    }
+
     pub fn maintenance_schedule_routes(service: Arc<MaintenanceScheduleService>) -> Router {
         create_maintenance_schedule_routes(service)
+    }
+
+    pub fn maintenance_stage_routes(service: Arc<MaintenanceStageService>) -> Router {
+        create_maintenance_stage_routes(service)
     }
 
     pub fn maintenance_visit_routes(service: Arc<MaintenanceVisitService>) -> Router {

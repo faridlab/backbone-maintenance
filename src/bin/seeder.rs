@@ -12,7 +12,9 @@ use sqlx::postgres::PgPoolOptions;
 use std::env;
 
 // Import seeders
+use backbone_maintenance::seeders::SeedMaintenanceRequestSeeder;
 use backbone_maintenance::seeders::SeedMaintenanceScheduleSeeder;
+use backbone_maintenance::seeders::SeedMaintenanceStageSeeder;
 use backbone_maintenance::seeders::SeedMaintenanceVisitSeeder;
 use backbone_maintenance::seeders::SeedMaintenanceVisitPartSeeder;
 use backbone_maintenance::seeders::Seeder;
@@ -43,7 +45,9 @@ async fn main() -> Result<()> {
 
     // Register seeders in order
     let mut seeders: Vec<Box<dyn Seeder + Send + Sync>> = Vec::new();
+    seeders.push(Box::new(SeedMaintenanceRequestSeeder::new()));
     seeders.push(Box::new(SeedMaintenanceScheduleSeeder::new()));
+    seeders.push(Box::new(SeedMaintenanceStageSeeder::new()));
     seeders.push(Box::new(SeedMaintenanceVisitSeeder::new()));
     seeders.push(Box::new(SeedMaintenanceVisitPartSeeder::new()));
 

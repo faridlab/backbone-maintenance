@@ -12,6 +12,82 @@ use rust_decimal::Decimal;
 use crate::domain::entity::*;
 
 // ============================================================================
+// MAINTENANCEREQUEST TYPES
+// ============================================================================
+
+/// Type-safe ID for MaintenanceRequest
+///
+/// Use this instead of raw Uuid for type safety across modules.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct MaintenanceRequestId(pub Uuid);
+
+impl MaintenanceRequestId {
+    pub fn new(id: Uuid) -> Self {
+        Self(id)
+    }
+
+    pub fn into_inner(self) -> Uuid {
+        self.0
+    }
+}
+
+impl From<Uuid> for MaintenanceRequestId {
+    fn from(id: Uuid) -> Self {
+        Self(id)
+    }
+}
+
+impl From<MaintenanceRequestId> for Uuid {
+    fn from(id: MaintenanceRequestId) -> Self {
+        id.0
+    }
+}
+
+/// Data transfer object for MaintenanceRequest
+///
+/// This is the public representation of MaintenanceRequest for other modules.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MaintenanceRequestDto {
+    pub id: MaintenanceRequestId,
+    pub company_id: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    pub request_date: NaiveDate,
+    pub schedule_date: Option<DateTime<Utc>>,
+    pub schedule_end: Option<DateTime<Utc>>,
+    pub close_date: Option<NaiveDate>,
+    pub duration: Decimal,
+    pub owner_user_id: Option<Uuid>,
+    pub user_id: Option<Uuid>,
+    pub asset_id: Option<Uuid>,
+    pub stage_id: Uuid,
+    pub kanban_state: RequestKanbanState,
+    pub priority: RequestPriority,
+    pub maintenance_type: MaintenanceType,
+    pub recurring: bool,
+    pub repeat_interval: i32,
+    pub repeat_unit: RepeatUnit,
+    pub repeat_type: RepeatType,
+    pub repeat_until: Option<NaiveDate>,
+    pub successor_request_id: Option<Uuid>,
+    pub successor_of_request_id: Option<Uuid>,
+    pub metadata: serde_json::Value,
+}
+
+/// Summary view of MaintenanceRequest for list displays
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MaintenanceRequestSummary {
+    pub id: MaintenanceRequestId,
+    pub name: String,
+}
+
+/// Reference to MaintenanceRequest for foreign key relationships
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MaintenanceRequestRef {
+    pub id: MaintenanceRequestId,
+}
+
+// ============================================================================
 // MAINTENANCESCHEDULE TYPES
 // ============================================================================
 
@@ -70,6 +146,65 @@ pub struct MaintenanceScheduleSummary {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MaintenanceScheduleRef {
     pub id: MaintenanceScheduleId,
+}
+
+// ============================================================================
+// MAINTENANCESTAGE TYPES
+// ============================================================================
+
+/// Type-safe ID for MaintenanceStage
+///
+/// Use this instead of raw Uuid for type safety across modules.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct MaintenanceStageId(pub Uuid);
+
+impl MaintenanceStageId {
+    pub fn new(id: Uuid) -> Self {
+        Self(id)
+    }
+
+    pub fn into_inner(self) -> Uuid {
+        self.0
+    }
+}
+
+impl From<Uuid> for MaintenanceStageId {
+    fn from(id: Uuid) -> Self {
+        Self(id)
+    }
+}
+
+impl From<MaintenanceStageId> for Uuid {
+    fn from(id: MaintenanceStageId) -> Self {
+        id.0
+    }
+}
+
+/// Data transfer object for MaintenanceStage
+///
+/// This is the public representation of MaintenanceStage for other modules.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MaintenanceStageDto {
+    pub id: MaintenanceStageId,
+    pub company_id: Option<Uuid>,
+    pub name: String,
+    pub sequence: i32,
+    pub fold: bool,
+    pub done: bool,
+    pub metadata: serde_json::Value,
+}
+
+/// Summary view of MaintenanceStage for list displays
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MaintenanceStageSummary {
+    pub id: MaintenanceStageId,
+    pub name: String,
+}
+
+/// Reference to MaintenanceStage for foreign key relationships
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MaintenanceStageRef {
+    pub id: MaintenanceStageId,
 }
 
 // ============================================================================

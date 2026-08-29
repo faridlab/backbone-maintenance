@@ -11,6 +11,33 @@ use chrono::{DateTime, Utc};
 use super::types::*;
 
 // ============================================================================
+// MAINTENANCEREQUEST EVENTS
+// ============================================================================
+
+/// Event published when a MaintenanceRequest is created
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MaintenanceRequestCreatedEvent {
+    pub id: MaintenanceRequestId,
+    pub data: MaintenanceRequestDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a MaintenanceRequest is updated
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MaintenanceRequestUpdatedEvent {
+    pub id: MaintenanceRequestId,
+    pub data: MaintenanceRequestDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a MaintenanceRequest is deleted
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MaintenanceRequestDeletedEvent {
+    pub id: MaintenanceRequestId,
+    pub occurred_at: DateTime<Utc>,
+}
+
+// ============================================================================
 // MAINTENANCESCHEDULE EVENTS
 // ============================================================================
 
@@ -34,6 +61,33 @@ pub struct MaintenanceScheduleUpdatedEvent {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MaintenanceScheduleDeletedEvent {
     pub id: MaintenanceScheduleId,
+    pub occurred_at: DateTime<Utc>,
+}
+
+// ============================================================================
+// MAINTENANCESTAGE EVENTS
+// ============================================================================
+
+/// Event published when a MaintenanceStage is created
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MaintenanceStageCreatedEvent {
+    pub id: MaintenanceStageId,
+    pub data: MaintenanceStageDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a MaintenanceStage is updated
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MaintenanceStageUpdatedEvent {
+    pub id: MaintenanceStageId,
+    pub data: MaintenanceStageDto,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Event published when a MaintenanceStage is deleted
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MaintenanceStageDeletedEvent {
+    pub id: MaintenanceStageId,
     pub occurred_at: DateTime<Utc>,
 }
 
@@ -99,9 +153,15 @@ pub struct MaintenanceVisitPartDeletedEvent {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum MaintenanceEvent {
+    MaintenanceRequestCreated(MaintenanceRequestCreatedEvent),
+    MaintenanceRequestUpdated(MaintenanceRequestUpdatedEvent),
+    MaintenanceRequestDeleted(MaintenanceRequestDeletedEvent),
     MaintenanceScheduleCreated(MaintenanceScheduleCreatedEvent),
     MaintenanceScheduleUpdated(MaintenanceScheduleUpdatedEvent),
     MaintenanceScheduleDeleted(MaintenanceScheduleDeletedEvent),
+    MaintenanceStageCreated(MaintenanceStageCreatedEvent),
+    MaintenanceStageUpdated(MaintenanceStageUpdatedEvent),
+    MaintenanceStageDeleted(MaintenanceStageDeletedEvent),
     MaintenanceVisitCreated(MaintenanceVisitCreatedEvent),
     MaintenanceVisitUpdated(MaintenanceVisitUpdatedEvent),
     MaintenanceVisitDeleted(MaintenanceVisitDeletedEvent),

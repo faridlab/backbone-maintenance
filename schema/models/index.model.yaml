@@ -13,12 +13,45 @@ module: maintenance
 version: 2
 schema: maintenance
 
-# ADR-0014 company fence: every business table in this module is company-private.
-# The row-level-security policies already ship in the migrations — schedules and
-# visits in 20260426220004_enable_company_rls.up.sql, visit parts in
-# 20260722100000_maintenance_visit_parts_company_rls.up.sql; this declares that
-# posture to the schema validator.
-company_fence: strict
+# =============================================================================
+# company_fence (ADR-0014): multi-tenant row-level-security posture
+# -----------------------------------------------------------------------------
+# Posture: shared_blank — nullable company_id on the STAGE master data, NOT NULL
+# on every transaction table (the fence vocabulary inventory established).
+#
+# Per ADR-0014, this declaration governs how the codegen stamps @required company_id
+# and how ADR-0015 enforcement hooks ground the three keys (db/both/service) against
+# the actual DDL. Posture options:
+#   shared_blank  : nullable company_id — NULL rows are first-class shared rows
+#                   (the port of Odoo's `[False]` escape). Applies to MASTER DATA.
+#   strict        : NOT NULL company_id — every row belongs to exactly one company
+#                   and NULL rows are rejected. The `company_id IS NULL` arm of the
+#                   shared_blank RLS predicate is dead on these tables, making them
+#                   behaviorally strict. Applies to TRANSACTIONS.
+#
+# Posture map (entity -> realized fence, all under this one declaration):
+#   MASTER DATA (shared_blank — nullable company_id, NULL = the one shared set):
+#     maintenance_stages   -> shared_blank (Odoo stages are company-agnostic master
+#                             data — one stage set serves every company; the seeded
+#                             NULL rows ARE that set, visible to every company session)
+#   TRANSACTIONS (strict-realized — @required company_id stays NOT NULL, the IS NULL
+#   arm of the policy is dead, the existing strict-shaped policies are UNCHANGED):
+#     maintenance_schedules  -> strict (policy from 20260426220004_enable_company_rls)
+#     maintenance_visits     -> strict (policy from 20260426220004_enable_company_rls)
+#     maintenance_visit_parts-> strict (policy from 20260722100000_..._company_rls)
+#     maintenance_requests   -> strict (policy from 20260829150000_create_request_family)
+#
+# Recorded divergence from Odoo (register rows MTF-7/8/9): the module-level fence
+# vocabulary offers ONE value per module, and `none` would strip the fence from the
+# strict tables, so the closest honest posture is the manufacturing master-data
+# pattern (20260901110200_fence_shared_blank_master_data): a nullable company_id
+# where the seeded NULL rows are the shared stage set. A per-company stage set is
+# POSSIBLE (a row with company_id set is that company's private stage) though
+# nothing seeds one; the behavior of the seeded set is identical to Odoo's global
+# stages. Odoo's request.company_id is required — maintenance_requests keeps
+# @required, so only the stage master escapes the fence.
+# -----------------------------------------------------------------------------
+company_fence: shared_blank
 description: "maintenance domain module"
 
 config:
@@ -72,3 +105,5 @@ shared_types:
 imports:
   - maintenance_schedule.model.yaml
   - maintenance_visit.model.yaml
+  - maintenance_stage.model.yaml
+  - maintenance_request.model.yaml

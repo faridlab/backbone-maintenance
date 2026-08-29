@@ -9,11 +9,15 @@ use anyhow::Result;
 use async_trait::async_trait;
 use sqlx::PgPool;
 
+mod maintenance_request_seeder;
 mod maintenance_schedule_seeder;
+mod maintenance_stage_seeder;
 mod maintenance_visit_seeder;
 mod maintenance_visit_part_seeder;
 
+pub use maintenance_request_seeder::SeedMaintenanceRequestSeeder;
 pub use maintenance_schedule_seeder::SeedMaintenanceScheduleSeeder;
+pub use maintenance_stage_seeder::SeedMaintenanceStageSeeder;
 pub use maintenance_visit_seeder::SeedMaintenanceVisitSeeder;
 pub use maintenance_visit_part_seeder::SeedMaintenanceVisitPartSeeder;
 

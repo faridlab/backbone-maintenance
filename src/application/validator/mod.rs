@@ -5,11 +5,15 @@
 pub mod shared_types;
 pub use shared_types::{ValidationError, ValidationErrors, ValidationResult, EntityValidator};
 
+pub mod maintenance_request_validator;
 pub mod maintenance_schedule_validator;
+pub mod maintenance_stage_validator;
 pub mod maintenance_visit_validator;
 pub mod maintenance_visit_part_validator;
 
+pub use maintenance_request_validator::{MaintenanceRequestValidator, maintenance_request_validator};
 pub use maintenance_schedule_validator::{MaintenanceScheduleValidator, maintenance_schedule_validator};
+pub use maintenance_stage_validator::{MaintenanceStageValidator, maintenance_stage_validator};
 pub use maintenance_visit_validator::{MaintenanceVisitValidator, maintenance_visit_validator};
 pub use maintenance_visit_part_validator::{MaintenanceVisitPartValidator, maintenance_visit_part_validator};
 

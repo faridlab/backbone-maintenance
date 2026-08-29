@@ -5,11 +5,21 @@
 //! This module provides DTOs for the presentation layer,
 //! with validation and OpenAPI schema support.
 
+pub mod maintenance_request_dto;
 pub mod maintenance_schedule_dto;
+pub mod maintenance_stage_dto;
 pub mod maintenance_visit_dto;
 pub mod maintenance_visit_part_dto;
 
 // Re-exports
+pub use maintenance_request_dto::{
+    CreateMaintenanceRequestDto,
+    UpdateMaintenanceRequestDto,
+    PatchMaintenanceRequestDto,
+    MaintenanceRequestResponseDto,
+    MaintenanceRequestListResponseDto,
+    MaintenanceRequestSummaryDto,
+};
 pub use maintenance_schedule_dto::{
     CreateMaintenanceScheduleDto,
     UpdateMaintenanceScheduleDto,
@@ -17,6 +27,14 @@ pub use maintenance_schedule_dto::{
     MaintenanceScheduleResponseDto,
     MaintenanceScheduleListResponseDto,
     MaintenanceScheduleSummaryDto,
+};
+pub use maintenance_stage_dto::{
+    CreateMaintenanceStageDto,
+    UpdateMaintenanceStageDto,
+    PatchMaintenanceStageDto,
+    MaintenanceStageResponseDto,
+    MaintenanceStageListResponseDto,
+    MaintenanceStageSummaryDto,
 };
 pub use maintenance_visit_dto::{
     CreateMaintenanceVisitDto,

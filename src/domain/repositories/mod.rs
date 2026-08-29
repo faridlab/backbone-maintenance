@@ -6,16 +6,30 @@
 //! Implementations should be in the infrastructure layer.
 
 
+pub mod maintenance_request_repository;
 pub mod maintenance_schedule_repository;
+pub mod maintenance_stage_repository;
 pub mod maintenance_visit_repository;
 pub mod maintenance_visit_part_repository;
 
 // Re-exports
+pub use maintenance_request_repository::{
+    MaintenanceRequestRepository,
+    MaintenanceRequestPaginationParams,
+    MaintenanceRequestPaginatedResult,
+    MaintenanceRequestFilter,
+};
 pub use maintenance_schedule_repository::{
     MaintenanceScheduleRepository,
     MaintenanceSchedulePaginationParams,
     MaintenanceSchedulePaginatedResult,
     MaintenanceScheduleFilter,
+};
+pub use maintenance_stage_repository::{
+    MaintenanceStageRepository,
+    MaintenanceStagePaginationParams,
+    MaintenanceStagePaginatedResult,
+    MaintenanceStageFilter,
 };
 pub use maintenance_visit_repository::{
     MaintenanceVisitRepository,

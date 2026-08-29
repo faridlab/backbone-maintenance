@@ -9,7 +9,9 @@
 use std::sync::Arc;
 
 // Import all services
+use crate::application::service::MaintenanceRequestService;
 use crate::application::service::MaintenanceScheduleService;
+use crate::application::service::MaintenanceStageService;
 use crate::application::service::MaintenanceVisitService;
 use crate::application::service::MaintenanceVisitPartService;
 
@@ -31,8 +33,12 @@ use crate::application::service::MaintenanceVisitPartService;
 /// ```
 #[derive(Clone)]
 pub struct AppState {
+    /// MaintenanceRequest service
+    pub maintenance_request_service: Arc<MaintenanceRequestService>,
     /// MaintenanceSchedule service
     pub maintenance_schedule_service: Arc<MaintenanceScheduleService>,
+    /// MaintenanceStage service
+    pub maintenance_stage_service: Arc<MaintenanceStageService>,
     /// MaintenanceVisit service
     pub maintenance_visit_service: Arc<MaintenanceVisitService>,
     /// MaintenanceVisitPart service
@@ -42,12 +48,16 @@ pub struct AppState {
 impl AppState {
     /// Create a new AppState with all services.
     pub fn new(
+        maintenance_request_service: Arc<MaintenanceRequestService>,
         maintenance_schedule_service: Arc<MaintenanceScheduleService>,
+        maintenance_stage_service: Arc<MaintenanceStageService>,
         maintenance_visit_service: Arc<MaintenanceVisitService>,
         maintenance_visit_part_service: Arc<MaintenanceVisitPartService>
     ) -> Self {
         Self {
+            maintenance_request_service,
             maintenance_schedule_service,
+            maintenance_stage_service,
             maintenance_visit_service,
             maintenance_visit_part_service,
         }
@@ -56,7 +66,9 @@ impl AppState {
     /// Create AppState from module instance.
     pub fn from_module(module: &crate::MaintenanceModule) -> Self {
         Self {
+            maintenance_request_service: module.maintenance_request_service.clone(),
             maintenance_schedule_service: module.maintenance_schedule_service.clone(),
+            maintenance_stage_service: module.maintenance_stage_service.clone(),
             maintenance_visit_service: module.maintenance_visit_service.clone(),
             maintenance_visit_part_service: module.maintenance_visit_part_service.clone(),
         }
@@ -68,7 +80,9 @@ impl AppState {
 /// Allows incremental construction of AppState.
 #[derive(Default)]
 pub struct AppStateBuilder {
+    maintenance_request_service: Option<Arc<MaintenanceRequestService>>,
     maintenance_schedule_service: Option<Arc<MaintenanceScheduleService>>,
+    maintenance_stage_service: Option<Arc<MaintenanceStageService>>,
     maintenance_visit_service: Option<Arc<MaintenanceVisitService>>,
     maintenance_visit_part_service: Option<Arc<MaintenanceVisitPartService>>,
 }
@@ -79,9 +93,21 @@ impl AppStateBuilder {
         Self::default()
     }
 
+    /// Set the MaintenanceRequest service.
+    pub fn with_maintenance_request_service(mut self, service: Arc<MaintenanceRequestService>) -> Self {
+        self.maintenance_request_service = Some(service);
+        self
+    }
+
     /// Set the MaintenanceSchedule service.
     pub fn with_maintenance_schedule_service(mut self, service: Arc<MaintenanceScheduleService>) -> Self {
         self.maintenance_schedule_service = Some(service);
+        self
+    }
+
+    /// Set the MaintenanceStage service.
+    pub fn with_maintenance_stage_service(mut self, service: Arc<MaintenanceStageService>) -> Self {
+        self.maintenance_stage_service = Some(service);
         self
     }
 
@@ -104,7 +130,9 @@ impl AppStateBuilder {
     /// Panics if any required service is not set.
     pub fn build(self) -> AppState {
         AppState {
+            maintenance_request_service: self.maintenance_request_service.expect("maintenance_request_service is required"),
             maintenance_schedule_service: self.maintenance_schedule_service.expect("maintenance_schedule_service is required"),
+            maintenance_stage_service: self.maintenance_stage_service.expect("maintenance_stage_service is required"),
             maintenance_visit_service: self.maintenance_visit_service.expect("maintenance_visit_service is required"),
             maintenance_visit_part_service: self.maintenance_visit_part_service.expect("maintenance_visit_part_service is required"),
         }

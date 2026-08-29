@@ -6,7 +6,9 @@
 
 pub use backbone_core::{Specification, AndSpecification, OrSpecification, NotSpecification};
 
+pub mod maintenance_request_specification;
 pub mod maintenance_schedule_specification;
+pub mod maintenance_stage_specification;
 pub mod maintenance_visit_specification;
 pub mod maintenance_visit_part_specification;
 

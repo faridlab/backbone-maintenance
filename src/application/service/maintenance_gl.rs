@@ -35,20 +35,22 @@ impl GlPostLine {
     }
 }
 
-/// A balanced posting request emitted by maintenances — the contract envelope.
+/// A balanced posting request emitted by this module's completion verb — the contract envelope.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AccountingPostEnvelope {
     pub idempotency_key: String,
     pub company_id: Uuid,
     pub branch_id: Option<Uuid>,
-    /// Posting source discriminator — maintenances emits "maintenance".
+    /// Posting source discriminator — the emitting domain's stable key (this module posts
+    /// "maintenance").
     pub source_type: String,
-    /// The producer voucher id (maintenance for acquire/dispose, schedule entry for depreciate).
+    /// The producer voucher id — the record whose completion produced this posting (here: the
+    /// completed maintenance visit).
     pub source_id: Uuid,
     pub source_reference: Option<String>,
     pub posting_date: chrono::NaiveDate,
     pub currency: String,
-    /// "original" (maintenances does not reverse in the MVP).
+    /// "original" (this module does not reverse postings in the MVP).
     pub posting_type: String,
     pub description: Option<String>,
     pub lines: Vec<GlPostLine>,

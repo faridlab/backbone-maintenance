@@ -10,3 +10,7 @@
 - maintenance_schedule_seed
 - maintenance_visit_seed
 - maintenance_visit_part_seed
+
+# Newly added seeds (preserve manual order above):
+- maintenance_stage_seed
+- maintenance_request_seed

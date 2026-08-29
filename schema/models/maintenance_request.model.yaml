@@ -1,0 +1,196 @@
+# =============================================================================
+# Domain: Maintenance
+# Entity: MaintenanceRequest
+# Description: A maintenance request on an asset — the request-family convergence object.
+#              The lifecycle is STAGE-DRIVEN: stage_id points at a MaintenanceStage
+#              (lifecycle: stage_ref, in-module REAL FK, ON DELETE RESTRICT) and there is
+#              deliberately NO stored status enum. Entering a stage with done=true closes
+#              the request (the G-MT5 trigger stamps close_date); closing a
+#              preventive+recurring request clones its successor INSIDE the same
+#              transaction (the zero-cron clone-on-done engine; the Schedule+Visit
+#              engine's inline advance_next_due is the precedent). stage changes go
+#              through the transition verb only — a raw SQL close of a preventive
+#              recurring request is REJECTED by the trigger (it would skip the spawn).
+#
+#              Port declinations recorded against Odoo (see docs/ + the convergence
+#              register): NO equipment/category/team entity this pass (the equipment
+#              register is the read-side on asset.Asset via asset_id); NO
+#              instruction_* worksheet fields (Enterprise); NO MTBF/MTTR columns and no
+#              todo-counter computes (dashboard reads are later work); kanban_state's
+#              Odoo stored-compute derivation rides equipment/category which do not
+#              exist, so it is PLAIN hand-set; NO sequence/numbering on the name; the
+#              Odoo custom `archive` is NOT inherited (the module-standard soft delete
+#              deleted_at plays soft-hide).
+# =============================================================================
+
+models:
+  - name: MaintenanceRequest
+    collection: maintenance_requests
+    description: "A maintenance request on an asset (stage-driven lifecycle, clone-on-done recurrence)"
+
+    relations:
+      stage:
+        type: MaintenanceStage
+
+    fields:
+      id:
+        type: uuid
+        attributes: ["@id", "@default(uuid)"]
+        description: "Unique request id"
+      company_id:
+        type: uuid
+        attributes: ["@required", "@exclude_from_foreign_key_check"]
+        description: "Org owner # logical FK to organization.Company.id"
+      name:
+        type: string
+        attributes: ["@required", "@length(max=500)"]
+        description: "Request title (free-form — no sequence/numbering)"
+      description:
+        type: string?
+        description: "What needs maintaining (free text)"
+      request_date:
+        type: date
+        attributes: ["@default(today)"]
+        description: "When the request was filed"
+      schedule_date:
+        type: datetime?
+        description: "Planned start (the recurrence base for a recurring request)"
+      schedule_end:
+        type: datetime?
+        description: "Planned finish; must not precede schedule_date (G-MT2)"
+      close_date:
+        type: date?
+        description: "Write-managed by the G-MT5 stage-transition trigger: stamped on entering a done stage, cleared on leaving — never hand-set"
+      duration:
+        type: decimal
+        attributes: ["@default(0)", "@precision(18,2)", "@non_negative"]
+        description: "Expected duration in hours (feeds the successor's schedule_end)"
+      owner_user_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "Responsible user # logical FK to sapiens.User.id"
+      user_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "Technician assigned (plain hand-set; the Odoo stored-compute derivation rides equipment/category, which do not exist) # logical FK to sapiens.User.id"
+      asset_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "The asset to maintain # logical FK to asset.Asset.id (the equipment register read-side — no equipment/category entity this pass)"
+      stage_id:
+        type: uuid
+        attributes: ["@required", "@foreign_key(MaintenanceStage.id)"]
+        lifecycle:
+          shape: stage_ref
+        description: "Current pipeline stage # FK maintenance_stages.id (in-module, ON DELETE RESTRICT, stage_ref lifecycle — no state enum column)"
+      kanban_state:
+        type: RequestKanbanState
+        attributes: ["@required", "@default(normal)"]
+        lifecycle:
+          shape: hand_set
+        description: "Per-stage sub-state: 'done' means ready-for-next-stage and is UNRELATED to stage.done. Auto-resets to normal on every stage change unless the caller sets it in the same statement (the G-MT5 trigger reproduces the Odoo unless-caller-set semantics)"
+      priority:
+        type: RequestPriority
+        lifecycle:
+          shape: hand_set
+        description: "Urgency for UI/dashboard only — plays no part in ordering (Odoo 0/1/2/3 = very_low/low/normal/high)"
+      maintenance_type:
+        type: MaintenanceType
+        attributes: ["@required", "@default(corrective)"]
+        description: "corrective (ad-hoc fault) | preventive (planned; only preventive may recur — G-MT8)"
+      recurring:
+        type: boolean
+        attributes: ["@default(false)"]
+        description: "Whether closing this request spawns its successor"
+      repeat_interval:
+        type: integer
+        attributes: ["@default(1)"]
+        description: "Recurrence step size (>= 1, G-MT3)"
+      repeat_unit:
+        type: RepeatUnit
+        attributes: ["@default(week)"]
+        description: "Recurrence calendar unit"
+      repeat_type:
+        type: RepeatType
+        attributes: ["@default(forever)"]
+        description: "forever | until — 'until' requires repeat_until (G-MT7: the fence, not a silent no-spawn)"
+      repeat_until:
+        type: date?
+        description: "Last date a successor may be scheduled for (inclusive); required when repeat_type = until"
+      successor_request_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "The clone spawned when this request closed (write-once spawn marker — claimed before the successor INSERT) # logical FK to MaintenanceRequest.id"
+      successor_of_request_id:
+        type: uuid?
+        attributes: ["@exclude_from_foreign_key_check"]
+        description: "The request this one was cloned from (backref; unique among non-null — one successor per source) # logical FK to MaintenanceRequest.id"
+      metadata:
+        type: Metadata
+        attributes: ["@audit_metadata"]
+        description: "Audit metadata"
+    indexes:
+      - type: index
+        fields: [company_id, stage_id]
+      - type: index
+        fields: [company_id, asset_id]
+      - type: index
+        fields: [stage_id]
+        where: "(metadata->>'deleted_at') IS NULL"
+      - type: index
+        fields: [company_id, schedule_date]
+      - type: unique
+        fields: [successor_of_request_id]
+        where: "successor_of_request_id IS NOT NULL"
+        description: "At most one spawned successor per source request — the partial-unique backstop behind the claim-marker CAS"
+
+# =============================================================================
+# Enums
+# =============================================================================
+
+enums:
+  - name: RequestKanbanState
+    description: "Per-stage kanban sub-state of a request (resets to normal on stage change)"
+    variants:
+      - name: normal
+        description: "No special flag"
+        default: true
+      - name: blocked
+        description: "Waiting on something — shown in the blocked lane"
+      - name: done
+        description: "Ready for the next stage — UNRELATED to the stage's done flag"
+
+  - name: RequestPriority
+    description: "Request urgency (UI/dashboard only; Odoo levels 0/1/2/3)"
+    variants:
+      - name: very_low
+        description: "Odoo '0' — whenever there is time"
+      - name: low
+        description: "Odoo '1' — the default urgency"
+        default: true
+      - name: normal
+        description: "Odoo '2' — should be handled soon"
+      - name: high
+        description: "Odoo '3' — urgent"
+
+  - name: RepeatUnit
+    description: "Calendar unit of a recurrence step"
+    variants:
+      - name: day
+        description: "Advances by repeat_interval days"
+      - name: week
+        description: "Advances by repeat_interval weeks"
+        default: true
+      - name: month
+        description: "Advances by repeat_interval months (calendar-exact)"
+      - name: year
+        description: "Advances by repeat_interval years (calendar-exact)"
+
+  - name: RepeatType
+    description: "How a recurrence terminates"
+    variants:
+      - name: forever
+        description: "Every close spawns the next successor"
+        default: true
+      - name: until
+        description: "Stops once the next schedule date would fall after repeat_until (inclusive)"

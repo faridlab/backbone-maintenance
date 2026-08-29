@@ -5,18 +5,26 @@
 //! These handlers use Axum and backbone-core's BackboneCrudHandler
 //! to provide all 12 standard Backbone CRUD endpoints.
 
+pub mod maintenance_request_handler;
 pub mod maintenance_schedule_handler;
+pub mod maintenance_stage_handler;
 pub mod maintenance_visit_handler;
 pub mod maintenance_visit_part_handler;
 
 // <<< CUSTOM
 pub mod maintenance_lifecycle_handler;
+pub mod maintenance_request_lifecycle_handler;
 // END CUSTOM
 
 // Re-exports
+pub use maintenance_request_handler::{create_maintenance_request_routes, create_maintenance_request_read_routes, create_maintenance_request_write_routes};
 pub use maintenance_schedule_handler::{create_maintenance_schedule_routes, create_maintenance_schedule_read_routes, create_maintenance_schedule_write_routes};
+pub use maintenance_stage_handler::{create_maintenance_stage_routes, create_maintenance_stage_read_routes, create_maintenance_stage_write_routes};
 pub use maintenance_visit_handler::{create_maintenance_visit_routes, create_maintenance_visit_read_routes, create_maintenance_visit_write_routes};
 pub use maintenance_visit_part_handler::{create_maintenance_visit_part_routes, create_maintenance_visit_part_read_routes, create_maintenance_visit_part_write_routes};
 // <<< CUSTOM
 pub use maintenance_lifecycle_handler::{create_maintenance_lifecycle_routes, MaintenanceLifecycleState};
+pub use maintenance_request_lifecycle_handler::{
+    create_maintenance_request_lifecycle_routes, MaintenanceRequestLifecycleState,
+};
 // END CUSTOM

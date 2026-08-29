@@ -11,14 +11,384 @@ servers:
     description: Development server
 
 tags:
+  - name: MaintenanceRequests
+    description: MaintenanceRequest management endpoints
   - name: MaintenanceSchedules
     description: MaintenanceSchedule management endpoints
+  - name: MaintenanceStages
+    description: MaintenanceStage management endpoints
   - name: MaintenanceVisits
     description: MaintenanceVisit management endpoints
   - name: MaintenanceVisitParts
     description: MaintenanceVisitPart management endpoints
 
 paths:
+  /api/v1/maintenance_requests:
+    get:
+      tags:
+        - MaintenanceRequests
+      summary: List MaintenanceRequests
+      description: Get a paginated list of MaintenanceRequests with optional filtering and sorting
+      operationId: listMaintenanceRequests
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceRequestList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - MaintenanceRequests
+      summary: Create MaintenanceRequest
+      description: Create a new MaintenanceRequest
+      operationId: createMaintenanceRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMaintenanceRequestRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceRequest'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/maintenance_requests/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags:
+        - MaintenanceRequests
+      summary: Get MaintenanceRequest by ID
+      operationId: getMaintenanceRequest
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - MaintenanceRequests
+      summary: Update MaintenanceRequest (full)
+      operationId: updateMaintenanceRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMaintenanceRequestRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - MaintenanceRequests
+      summary: Update MaintenanceRequest (partial)
+      operationId: patchMaintenanceRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchMaintenanceRequestRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - MaintenanceRequests
+      summary: Delete MaintenanceRequest (soft)
+      operationId: deleteMaintenanceRequest
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/maintenance_requests/bulk:
+    post:
+      tags:
+        - MaintenanceRequests
+      summary: Bulk create MaintenanceRequests
+      operationId: bulkCreateMaintenanceRequests
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreateMaintenanceRequestRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MaintenanceRequest'
+    put:
+      tags:
+        - MaintenanceRequests
+      summary: Bulk update MaintenanceRequests (full, atomic)
+      operationId: bulkUpdateMaintenanceRequests
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                allOf:
+                  - type: object
+                    required: [id]
+                    properties:
+                      id:
+                        type: string
+                  - $ref: '#/components/schemas/UpdateMaintenanceRequestRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceRequestBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    patch:
+      tags:
+        - MaintenanceRequests
+      summary: Bulk partial-update MaintenanceRequests (atomic)
+      operationId: bulkPatchMaintenanceRequests
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  required: [ids, patch]
+                  properties:
+                    ids:
+                      type: array
+                      items: { type: string }
+                    patch:
+                      type: object
+                      additionalProperties: true
+                - type: object
+                  required: [items]
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        required: [id, patch]
+                        properties:
+                          id: { type: string }
+                          patch: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceRequestBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/maintenance_requests/upsert:
+    post:
+      tags:
+        - MaintenanceRequests
+      summary: Upsert MaintenanceRequest
+      operationId: upsertMaintenanceRequest
+      parameters:
+        - name: key_field
+          in: query
+          schema:
+            type: string
+        - name: key_value
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMaintenanceRequestRequest'
+      responses:
+        '200':
+          description: Upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceRequest'
+
+  /api/v1/maintenance_requests/trash:
+    get:
+      tags:
+        - MaintenanceRequests
+      summary: List deleted MaintenanceRequests
+      operationId: listDeletedMaintenanceRequests
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceRequestList'
+
+  /api/v1/maintenance_requests/{id}/restore:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags:
+        - MaintenanceRequests
+      summary: Restore deleted MaintenanceRequest
+      operationId: restoreMaintenanceRequest
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/maintenance_requests/empty:
+    delete:
+      tags:
+        - MaintenanceRequests
+      summary: Empty trash for MaintenanceRequests
+      operationId: emptyTrashMaintenanceRequests
+      responses:
+        '200':
+          description: Trash emptied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted_count:
+                    type: integer
+
+  /api/v1/maintenance_requests/delete/bulk:
+    post:
+      tags:
+        - MaintenanceRequests
+      summary: Bulk soft-delete MaintenanceRequests by ids (atomic)
+      operationId: bulkDeleteMaintenanceRequests
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Soft-deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  soft_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/maintenance_requests/restore/bulk:
+    post:
+      tags:
+        - MaintenanceRequests
+      summary: Bulk restore MaintenanceRequests by ids (atomic)
+      operationId: bulkRestoreMaintenanceRequests
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceRequestBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/maintenance_requests/restore/all:
+    post:
+      tags:
+        - MaintenanceRequests
+      summary: Restore all soft-deleted MaintenanceRequests
+      operationId: restoreAllMaintenanceRequests
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  restored: { type: integer }
+
+  /api/v1/maintenance_requests/trash/bulk:
+    delete:
+      tags:
+        - MaintenanceRequests
+      summary: Bulk permanently-delete MaintenanceRequests from trash by ids (atomic)
+      operationId: bulkPermanentDeleteMaintenanceRequests
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  permanently_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
   /api/v1/maintenance_schedules:
     get:
       tags:
@@ -371,6 +741,372 @@ paths:
         - MaintenanceSchedules
       summary: Bulk permanently-delete MaintenanceSchedules from trash by ids (atomic)
       operationId: bulkPermanentDeleteMaintenanceSchedules
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  permanently_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/maintenance_stages:
+    get:
+      tags:
+        - MaintenanceStages
+      summary: List MaintenanceStages
+      description: Get a paginated list of MaintenanceStages with optional filtering and sorting
+      operationId: listMaintenanceStages
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - $ref: '#/components/parameters/SortByParam'
+        - $ref: '#/components/parameters/SortOrderParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceStageList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - MaintenanceStages
+      summary: Create MaintenanceStage
+      description: Create a new MaintenanceStage
+      operationId: createMaintenanceStage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMaintenanceStageRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceStage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/maintenance_stages/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+
+    get:
+      tags:
+        - MaintenanceStages
+      summary: Get MaintenanceStage by ID
+      operationId: getMaintenanceStage
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceStage'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - MaintenanceStages
+      summary: Update MaintenanceStage (full)
+      operationId: updateMaintenanceStage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMaintenanceStageRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceStage'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags:
+        - MaintenanceStages
+      summary: Update MaintenanceStage (partial)
+      operationId: patchMaintenanceStage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchMaintenanceStageRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceStage'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - MaintenanceStages
+      summary: Delete MaintenanceStage (soft)
+      operationId: deleteMaintenanceStage
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/maintenance_stages/bulk:
+    post:
+      tags:
+        - MaintenanceStages
+      summary: Bulk create MaintenanceStages
+      operationId: bulkCreateMaintenanceStages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreateMaintenanceStageRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MaintenanceStage'
+    put:
+      tags:
+        - MaintenanceStages
+      summary: Bulk update MaintenanceStages (full, atomic)
+      operationId: bulkUpdateMaintenanceStages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                allOf:
+                  - type: object
+                    required: [id]
+                    properties:
+                      id:
+                        type: string
+                  - $ref: '#/components/schemas/UpdateMaintenanceStageRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceStageBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    patch:
+      tags:
+        - MaintenanceStages
+      summary: Bulk partial-update MaintenanceStages (atomic)
+      operationId: bulkPatchMaintenanceStages
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  required: [ids, patch]
+                  properties:
+                    ids:
+                      type: array
+                      items: { type: string }
+                    patch:
+                      type: object
+                      additionalProperties: true
+                - type: object
+                  required: [items]
+                  properties:
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        required: [id, patch]
+                        properties:
+                          id: { type: string }
+                          patch: { type: object, additionalProperties: true }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceStageBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/maintenance_stages/upsert:
+    post:
+      tags:
+        - MaintenanceStages
+      summary: Upsert MaintenanceStage
+      operationId: upsertMaintenanceStage
+      parameters:
+        - name: key_field
+          in: query
+          schema:
+            type: string
+        - name: key_value
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMaintenanceStageRequest'
+      responses:
+        '200':
+          description: Upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceStage'
+
+  /api/v1/maintenance_stages/trash:
+    get:
+      tags:
+        - MaintenanceStages
+      summary: List deleted MaintenanceStages
+      operationId: listDeletedMaintenanceStages
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceStageList'
+
+  /api/v1/maintenance_stages/{id}/restore:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags:
+        - MaintenanceStages
+      summary: Restore deleted MaintenanceStage
+      operationId: restoreMaintenanceStage
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceStage'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/maintenance_stages/empty:
+    delete:
+      tags:
+        - MaintenanceStages
+      summary: Empty trash for MaintenanceStages
+      operationId: emptyTrashMaintenanceStages
+      responses:
+        '200':
+          description: Trash emptied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted_count:
+                    type: integer
+
+  /api/v1/maintenance_stages/delete/bulk:
+    post:
+      tags:
+        - MaintenanceStages
+      summary: Bulk soft-delete MaintenanceStages by ids (atomic)
+      operationId: bulkDeleteMaintenanceStages
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Soft-deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  soft_deleted: { type: integer }
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/maintenance_stages/restore/bulk:
+    post:
+      tags:
+        - MaintenanceStages
+      summary: Bulk restore MaintenanceStages by ids (atomic)
+      operationId: bulkRestoreMaintenanceStages
+      requestBody:
+        $ref: '#/components/requestBodies/BatchIds'
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaintenanceStageBulkResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/maintenance_stages/restore/all:
+    post:
+      tags:
+        - MaintenanceStages
+      summary: Restore all soft-deleted MaintenanceStages
+      operationId: restoreAllMaintenanceStages
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  restored: { type: integer }
+
+  /api/v1/maintenance_stages/trash/bulk:
+    delete:
+      tags:
+        - MaintenanceStages
+      summary: Bulk permanently-delete MaintenanceStages from trash by ids (atomic)
+      operationId: bulkPermanentDeleteMaintenanceStages
       requestBody:
         $ref: '#/components/requestBodies/BatchIds'
       responses:
@@ -1119,6 +1855,367 @@ paths:
 
 components:
   schemas:
+    MaintenanceRequest:
+      type: object
+      required:
+        - id
+        - company_id
+        - name
+        - request_date
+        - duration
+        - stage_id
+        - kanban_state
+        - priority
+        - maintenance_type
+        - recurring
+        - repeat_interval
+        - repeat_unit
+        - repeat_type
+        - metadata
+      properties:
+        id:
+          type: string
+          format: uuid
+        company_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          nullable: true
+          type: string
+        request_date:
+          type: string
+          format: date
+        schedule_date:
+          nullable: true
+          type: string
+          format: date-time
+        schedule_end:
+          nullable: true
+          type: string
+          format: date-time
+        close_date:
+          nullable: true
+          type: string
+          format: date
+        duration:
+          type: string
+        owner_user_id:
+          nullable: true
+          type: string
+          format: uuid
+        user_id:
+          nullable: true
+          type: string
+          format: uuid
+        asset_id:
+          nullable: true
+          type: string
+          format: uuid
+        stage_id:
+          type: string
+          format: uuid
+        kanban_state:
+          type: string
+        priority:
+          type: string
+        maintenance_type:
+          type: string
+        recurring:
+          type: boolean
+        repeat_interval:
+          type: integer
+          format: int32
+        repeat_unit:
+          type: string
+        repeat_type:
+          type: string
+        repeat_until:
+          nullable: true
+          type: string
+          format: date
+        successor_request_id:
+          nullable: true
+          type: string
+          format: uuid
+        successor_of_request_id:
+          nullable: true
+          type: string
+          format: uuid
+        metadata:
+          type: object
+
+    MaintenanceRequestBulkResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MaintenanceRequest'
+        total: { type: integer }
+        failed: { type: integer }
+        errors:
+          type: array
+          items: { type: string }
+
+    CreateMaintenanceRequestRequest:
+      type: object
+      required:
+        - company_id
+        - name
+        - request_date
+        - duration
+        - stage_id
+        - kanban_state
+        - priority
+        - maintenance_type
+        - recurring
+        - repeat_interval
+        - repeat_unit
+        - repeat_type
+        - metadata
+      properties:
+        company_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          nullable: true
+          type: string
+        request_date:
+          type: string
+          format: date
+        schedule_date:
+          nullable: true
+          type: string
+          format: date-time
+        schedule_end:
+          nullable: true
+          type: string
+          format: date-time
+        close_date:
+          nullable: true
+          type: string
+          format: date
+        duration:
+          type: string
+        owner_user_id:
+          nullable: true
+          type: string
+          format: uuid
+        user_id:
+          nullable: true
+          type: string
+          format: uuid
+        asset_id:
+          nullable: true
+          type: string
+          format: uuid
+        stage_id:
+          type: string
+          format: uuid
+        kanban_state:
+          type: string
+        priority:
+          type: string
+        maintenance_type:
+          type: string
+        recurring:
+          type: boolean
+        repeat_interval:
+          type: integer
+          format: int32
+        repeat_unit:
+          type: string
+        repeat_type:
+          type: string
+        repeat_until:
+          nullable: true
+          type: string
+          format: date
+        successor_request_id:
+          nullable: true
+          type: string
+          format: uuid
+        successor_of_request_id:
+          nullable: true
+          type: string
+          format: uuid
+        metadata:
+          type: object
+
+    UpdateMaintenanceRequestRequest:
+      type: object
+      required:
+        - company_id
+        - name
+        - request_date
+        - duration
+        - stage_id
+        - kanban_state
+        - priority
+        - maintenance_type
+        - recurring
+        - repeat_interval
+        - repeat_unit
+        - repeat_type
+        - metadata
+      properties:
+        company_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          nullable: true
+          type: string
+        request_date:
+          type: string
+          format: date
+        schedule_date:
+          nullable: true
+          type: string
+          format: date-time
+        schedule_end:
+          nullable: true
+          type: string
+          format: date-time
+        close_date:
+          nullable: true
+          type: string
+          format: date
+        duration:
+          type: string
+        owner_user_id:
+          nullable: true
+          type: string
+          format: uuid
+        user_id:
+          nullable: true
+          type: string
+          format: uuid
+        asset_id:
+          nullable: true
+          type: string
+          format: uuid
+        stage_id:
+          type: string
+          format: uuid
+        kanban_state:
+          type: string
+        priority:
+          type: string
+        maintenance_type:
+          type: string
+        recurring:
+          type: boolean
+        repeat_interval:
+          type: integer
+          format: int32
+        repeat_unit:
+          type: string
+        repeat_type:
+          type: string
+        repeat_until:
+          nullable: true
+          type: string
+          format: date
+        successor_request_id:
+          nullable: true
+          type: string
+          format: uuid
+        successor_of_request_id:
+          nullable: true
+          type: string
+          format: uuid
+        metadata:
+          type: object
+
+    PatchMaintenanceRequestRequest:
+      type: object
+      properties:
+        company_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          nullable: true
+          type: string
+        request_date:
+          type: string
+          format: date
+        schedule_date:
+          nullable: true
+          type: string
+          format: date-time
+        schedule_end:
+          nullable: true
+          type: string
+          format: date-time
+        close_date:
+          nullable: true
+          type: string
+          format: date
+        duration:
+          type: string
+        owner_user_id:
+          nullable: true
+          type: string
+          format: uuid
+        user_id:
+          nullable: true
+          type: string
+          format: uuid
+        asset_id:
+          nullable: true
+          type: string
+          format: uuid
+        stage_id:
+          type: string
+          format: uuid
+        kanban_state:
+          type: string
+        priority:
+          type: string
+        maintenance_type:
+          type: string
+        recurring:
+          type: boolean
+        repeat_interval:
+          type: integer
+          format: int32
+        repeat_unit:
+          type: string
+        repeat_type:
+          type: string
+        repeat_until:
+          nullable: true
+          type: string
+          format: date
+        successor_request_id:
+          nullable: true
+          type: string
+          format: uuid
+        successor_of_request_id:
+          nullable: true
+          type: string
+          format: uuid
+        metadata:
+          type: object
+
+    MaintenanceRequestList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MaintenanceRequest'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
     MaintenanceSchedule:
       type: object
       required:
@@ -1255,6 +2352,127 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MaintenanceSchedule'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    MaintenanceStage:
+      type: object
+      required:
+        - id
+        - name
+        - sequence
+        - fold
+        - done
+        - metadata
+      properties:
+        id:
+          type: string
+          format: uuid
+        company_id:
+          nullable: true
+          type: string
+          format: uuid
+        name:
+          type: string
+        sequence:
+          type: integer
+          format: int32
+        fold:
+          type: boolean
+        done:
+          type: boolean
+        metadata:
+          type: object
+
+    MaintenanceStageBulkResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MaintenanceStage'
+        total: { type: integer }
+        failed: { type: integer }
+        errors:
+          type: array
+          items: { type: string }
+
+    CreateMaintenanceStageRequest:
+      type: object
+      required:
+        - name
+        - sequence
+        - fold
+        - done
+        - metadata
+      properties:
+        company_id:
+          nullable: true
+          type: string
+          format: uuid
+        name:
+          type: string
+        sequence:
+          type: integer
+          format: int32
+        fold:
+          type: boolean
+        done:
+          type: boolean
+        metadata:
+          type: object
+
+    UpdateMaintenanceStageRequest:
+      type: object
+      required:
+        - name
+        - sequence
+        - fold
+        - done
+        - metadata
+      properties:
+        company_id:
+          nullable: true
+          type: string
+          format: uuid
+        name:
+          type: string
+        sequence:
+          type: integer
+          format: int32
+        fold:
+          type: boolean
+        done:
+          type: boolean
+        metadata:
+          type: object
+
+    PatchMaintenanceStageRequest:
+      type: object
+      properties:
+        company_id:
+          nullable: true
+          type: string
+          format: uuid
+        name:
+          type: string
+        sequence:
+          type: integer
+          format: int32
+        fold:
+          type: boolean
+        done:
+          type: boolean
+        metadata:
+          type: object
+
+    MaintenanceStageList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MaintenanceStage'
         meta:
           $ref: '#/components/schemas/PaginationMeta'
 
