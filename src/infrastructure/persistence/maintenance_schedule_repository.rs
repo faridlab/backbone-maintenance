@@ -13,7 +13,7 @@ use chrono::NaiveDate;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use backbone_orm::company_scope;
+use backbone_orm::org_scope;
 
 use crate::domain::entity::MaintenanceSchedule;
 
@@ -45,7 +45,6 @@ impl MaintenanceScheduleRepository {
 /// Mirrors the raw column shape rather than the `MaintenanceSchedule` entity.
 pub struct NewScheduleRow<'a> {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub asset_id: Uuid,
     pub name: &'a str,
     pub interval_days: i32,
@@ -57,21 +56,23 @@ pub struct NewScheduleRow<'a> {
 impl MaintenanceScheduleRepository {
     /// Define a preventive maintenance schedule for an asset.
     ///
-    /// Runs outside a transaction on the pool via `execute_scoped`; the caller wraps it in
-    /// `with_company_scope(Some(company_id))` so the INSERT passes the WITH CHECK fence (ADR-0008).
+    /// Runs outside a transaction on the pool via `org_scope::execute_scoped`, which binds the
+    /// ambient org scope (the composing service sets it per request) so the INSERT passes the
+    /// decorator's WITH CHECK fence; the decorator's fill trigger stamps the acting unit
+    /// (ADR-0029). Undecorated (module tests) the insert runs plain.
     pub async fn insert_schedule(
         &self,
         pool: &PgPool,
         s: &NewScheduleRow<'_>,
     ) -> Result<(), sqlx::Error> {
-        company_scope::execute_scoped(
+        org_scope::execute_scoped(
             pool,
             sqlx::query(
                 r#"INSERT INTO maintenance.maintenance_schedules
-                     (id, company_id, asset_id, name, interval_days, next_due_date, status)
-                   VALUES ($1,$2,$3,$4,$5,$6,'active')"#,
+                     (id, asset_id, name, interval_days, next_due_date, status)
+                   VALUES ($1,$2,$3,$4,$5,'active')"#,
             )
-            .bind(s.id).bind(s.company_id).bind(s.asset_id).bind(s.name)
+            .bind(s.id).bind(s.asset_id).bind(s.name)
             .bind(s.interval_days).bind(s.next_due_date),
         )
         .await?;
@@ -82,8 +83,8 @@ impl MaintenanceScheduleRepository {
     /// — the recurrence that makes a preventive plan preventive.
     ///
     /// Takes the CALLER'S connection so it commits as one unit with the visit completion that gates it
-    /// (at most once, via that completion's CAS). The caller has already bound the company on it
-    /// (`bind_company_on`) — don't re-bind here.
+    /// (at most once, via that completion's CAS). The caller has already relayed the ambient org
+    /// scope onto it — don't re-bind here.
     pub async fn advance_next_due(
         &self,
         conn: &mut sqlx::PgConnection,

@@ -1859,7 +1859,6 @@ components:
       type: object
       required:
         - id
-        - company_id
         - name
         - request_date
         - duration
@@ -1874,9 +1873,6 @@ components:
         - metadata
       properties:
         id:
-          type: string
-          format: uuid
-        company_id:
           type: string
           format: uuid
         name:
@@ -1962,7 +1958,6 @@ components:
     CreateMaintenanceRequestRequest:
       type: object
       required:
-        - company_id
         - name
         - request_date
         - duration
@@ -1976,9 +1971,6 @@ components:
         - repeat_type
         - metadata
       properties:
-        company_id:
-          type: string
-          format: uuid
         name:
           type: string
         description:
@@ -2049,7 +2041,6 @@ components:
     UpdateMaintenanceRequestRequest:
       type: object
       required:
-        - company_id
         - name
         - request_date
         - duration
@@ -2063,9 +2054,6 @@ components:
         - repeat_type
         - metadata
       properties:
-        company_id:
-          type: string
-          format: uuid
         name:
           type: string
         description:
@@ -2136,9 +2124,6 @@ components:
     PatchMaintenanceRequestRequest:
       type: object
       properties:
-        company_id:
-          type: string
-          format: uuid
         name:
           type: string
         description:
@@ -2220,7 +2205,6 @@ components:
       type: object
       required:
         - id
-        - company_id
         - asset_id
         - name
         - interval_days
@@ -2229,9 +2213,6 @@ components:
         - metadata
       properties:
         id:
-          type: string
-          format: uuid
-        company_id:
           type: string
           format: uuid
         asset_id:
@@ -2266,7 +2247,6 @@ components:
     CreateMaintenanceScheduleRequest:
       type: object
       required:
-        - company_id
         - asset_id
         - name
         - interval_days
@@ -2274,9 +2254,6 @@ components:
         - status
         - metadata
       properties:
-        company_id:
-          type: string
-          format: uuid
         asset_id:
           type: string
           format: uuid
@@ -2296,7 +2273,6 @@ components:
     UpdateMaintenanceScheduleRequest:
       type: object
       required:
-        - company_id
         - asset_id
         - name
         - interval_days
@@ -2304,9 +2280,6 @@ components:
         - status
         - metadata
       properties:
-        company_id:
-          type: string
-          format: uuid
         asset_id:
           type: string
           format: uuid
@@ -2326,9 +2299,6 @@ components:
     PatchMaintenanceScheduleRequest:
       type: object
       properties:
-        company_id:
-          type: string
-          format: uuid
         asset_id:
           type: string
           format: uuid
@@ -2368,10 +2338,6 @@ components:
         id:
           type: string
           format: uuid
-        company_id:
-          nullable: true
-          type: string
-          format: uuid
         name:
           type: string
         sequence:
@@ -2406,10 +2372,6 @@ components:
         - done
         - metadata
       properties:
-        company_id:
-          nullable: true
-          type: string
-          format: uuid
         name:
           type: string
         sequence:
@@ -2431,10 +2393,6 @@ components:
         - done
         - metadata
       properties:
-        company_id:
-          nullable: true
-          type: string
-          format: uuid
         name:
           type: string
         sequence:
@@ -2450,10 +2408,6 @@ components:
     PatchMaintenanceStageRequest:
       type: object
       properties:
-        company_id:
-          nullable: true
-          type: string
-          format: uuid
         name:
           type: string
         sequence:
@@ -2480,7 +2434,6 @@ components:
       type: object
       required:
         - id
-        - company_id
         - asset_id
         - maintenance_type
         - status
@@ -2491,9 +2444,6 @@ components:
         - metadata
       properties:
         id:
-          type: string
-          format: uuid
-        company_id:
           type: string
           format: uuid
         asset_id:
@@ -2570,7 +2520,6 @@ components:
     CreateMaintenanceVisitRequest:
       type: object
       required:
-        - company_id
         - asset_id
         - maintenance_type
         - status
@@ -2580,9 +2529,6 @@ components:
         - total_cost
         - metadata
       properties:
-        company_id:
-          type: string
-          format: uuid
         asset_id:
           type: string
           format: uuid
@@ -2644,7 +2590,6 @@ components:
     UpdateMaintenanceVisitRequest:
       type: object
       required:
-        - company_id
         - asset_id
         - maintenance_type
         - status
@@ -2654,9 +2599,6 @@ components:
         - total_cost
         - metadata
       properties:
-        company_id:
-          type: string
-          format: uuid
         asset_id:
           type: string
           format: uuid
@@ -2718,9 +2660,6 @@ components:
     PatchMaintenanceVisitRequest:
       type: object
       properties:
-        company_id:
-          type: string
-          format: uuid
         asset_id:
           type: string
           format: uuid
@@ -2793,7 +2732,6 @@ components:
       type: object
       required:
         - id
-        - company_id
         - visit_id
         - item_id
         - quantity
@@ -2802,9 +2740,6 @@ components:
         - metadata
       properties:
         id:
-          type: string
-          format: uuid
-        company_id:
           type: string
           format: uuid
         visit_id:
@@ -2838,7 +2773,6 @@ components:
     CreateMaintenanceVisitPartRequest:
       type: object
       required:
-        - company_id
         - visit_id
         - item_id
         - quantity
@@ -2846,9 +2780,6 @@ components:
         - amount
         - metadata
       properties:
-        company_id:
-          type: string
-          format: uuid
         visit_id:
           type: string
           format: uuid
@@ -2867,7 +2798,6 @@ components:
     UpdateMaintenanceVisitPartRequest:
       type: object
       required:
-        - company_id
         - visit_id
         - item_id
         - quantity
@@ -2875,9 +2805,6 @@ components:
         - amount
         - metadata
       properties:
-        company_id:
-          type: string
-          format: uuid
         visit_id:
           type: string
           format: uuid
@@ -2896,9 +2823,6 @@ components:
     PatchMaintenanceVisitPartRequest:
       type: object
       properties:
-        company_id:
-          type: string
-          format: uuid
         visit_id:
           type: string
           format: uuid

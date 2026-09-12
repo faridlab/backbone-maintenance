@@ -38,9 +38,6 @@ use crate::domain::entity::RequestPriority;
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct CreateMaintenanceRequestDto {
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -99,9 +96,6 @@ pub struct CreateMaintenanceRequestDto {
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateMaintenanceRequestDto {
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -160,9 +154,6 @@ pub struct UpdateMaintenanceRequestDto {
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct PatchMaintenanceRequestDto {
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(skip_serializing_if = "Option::is_none", alias = "company_id")]
-    pub company_id: Option<Uuid>,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -215,7 +206,7 @@ pub struct PatchMaintenanceRequestDto {
 impl PatchMaintenanceRequestDto {
     /// Check if any field is set
     pub fn has_changes(&self) -> bool {
-        self.company_id.is_some() || self.name.is_some() || self.description.is_some() || self.request_date.is_some() || self.schedule_date.is_some() || self.schedule_end.is_some() || self.close_date.is_some() || self.duration.is_some() || self.owner_user_id.is_some() || self.user_id.is_some() || self.asset_id.is_some() || self.stage_id.is_some() || self.kanban_state.is_some() || self.priority.is_some() || self.maintenance_type.is_some() || self.recurring.is_some() || self.repeat_interval.is_some() || self.repeat_unit.is_some() || self.repeat_type.is_some() || self.repeat_until.is_some() || self.successor_request_id.is_some() || self.successor_of_request_id.is_some()
+        self.name.is_some() || self.description.is_some() || self.request_date.is_some() || self.schedule_date.is_some() || self.schedule_end.is_some() || self.close_date.is_some() || self.duration.is_some() || self.owner_user_id.is_some() || self.user_id.is_some() || self.asset_id.is_some() || self.stage_id.is_some() || self.kanban_state.is_some() || self.priority.is_some() || self.maintenance_type.is_some() || self.recurring.is_some() || self.repeat_interval.is_some() || self.repeat_unit.is_some() || self.repeat_type.is_some() || self.repeat_until.is_some() || self.successor_request_id.is_some() || self.successor_of_request_id.is_some()
     }
 }
 
@@ -233,8 +224,6 @@ impl PatchMaintenanceRequestDto {
 pub struct MaintenanceRequestResponseDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     pub id: Uuid,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
     pub description: Option<String>,
@@ -318,9 +307,9 @@ impl MaintenanceRequestListResponseDto {
 #[serde(rename_all = "camelCase")]
 pub struct MaintenanceRequestSummaryDto {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub name: String,
     pub description: Option<String>,
+    pub request_date: NaiveDate,
     pub created_at: Option<DateTime<Utc>>,
 }
 
@@ -332,7 +321,6 @@ impl From<MaintenanceRequest> for MaintenanceRequestResponseDto {
     fn from(entity: MaintenanceRequest) -> Self {
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             name: entity.name,
             description: entity.description,
             request_date: entity.request_date,
@@ -364,9 +352,9 @@ impl From<MaintenanceRequest> for MaintenanceRequestSummaryDto {
         let created_at = backbone_core::PersistentEntity::created_at(&entity);
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             name: entity.name,
             description: entity.description,
+            request_date: entity.request_date,
             created_at,
         }
     }
@@ -376,7 +364,6 @@ impl From<CreateMaintenanceRequestDto> for MaintenanceRequest {
     fn from(dto: CreateMaintenanceRequestDto) -> Self {
         Self {
             id: Uuid::new_v4(),
-            company_id: dto.company_id,
             name: dto.name,
             description: dto.description,
             request_date: dto.request_date,
@@ -407,7 +394,6 @@ impl From<&MaintenanceRequest> for MaintenanceRequestResponseDto {
     fn from(entity: &MaintenanceRequest) -> Self {
         Self {
             id: entity.id.clone(),
-            company_id: entity.company_id.clone(),
             name: entity.name.clone(),
             description: entity.description.clone(),
             request_date: entity.request_date.clone(),
@@ -442,7 +428,6 @@ impl backbone_core::FromCreateDto<CreateMaintenanceRequestDto> for MaintenanceRe
 
 impl backbone_core::ApplyUpdateDto<UpdateMaintenanceRequestDto> for MaintenanceRequest {
     fn apply_update(mut self, dto: UpdateMaintenanceRequestDto) -> backbone_core::ServiceResult<Self> {
-        self.company_id = dto.company_id;
         self.name = dto.name;
         self.description = dto.description;
         self.request_date = dto.request_date;

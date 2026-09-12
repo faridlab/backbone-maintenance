@@ -12,6 +12,8 @@ use uuid::Uuid;
 /// A request to issue a visit's parts out of a warehouse.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PartsIssue {
+    /// Legacy twin (ADR-0029): the inventory seam's wire shape still carries the tenant (the
+    /// composing adapter decides what it binds); filled from the ambient org scope's company echo.
     pub company_id: Uuid,
     pub visit_id: Uuid,
     pub warehouse_id: Uuid,

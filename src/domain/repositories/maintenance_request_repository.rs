@@ -44,7 +44,6 @@ pub struct MaintenanceRequestPaginatedResult {
 /// Filter parameters for list queries
 #[derive(Debug, Clone, Default)]
 pub struct MaintenanceRequestFilter {
-    pub company_id: Option<Uuid>,
     pub name: Option<String>,
     pub description: Option<String>,
     pub owner_user_id: Option<Uuid>,
@@ -64,7 +63,7 @@ pub struct MaintenanceRequestFilter {
 impl MaintenanceRequestFilter {
     /// Check if any filter is set
     pub fn has_filters(&self) -> bool {
-        self.company_id.is_some() || self.name.is_some() || self.description.is_some() || self.owner_user_id.is_some() || self.user_id.is_some() || self.asset_id.is_some() || self.stage_id.is_some() || self.kanban_state.is_some() || self.priority.is_some() || self.maintenance_type.is_some() || self.recurring.is_some() || self.repeat_unit.is_some() || self.repeat_type.is_some() || self.successor_request_id.is_some() || self.successor_of_request_id.is_some()
+        self.name.is_some() || self.description.is_some() || self.owner_user_id.is_some() || self.user_id.is_some() || self.asset_id.is_some() || self.stage_id.is_some() || self.kanban_state.is_some() || self.priority.is_some() || self.maintenance_type.is_some() || self.recurring.is_some() || self.repeat_unit.is_some() || self.repeat_type.is_some() || self.successor_request_id.is_some() || self.successor_of_request_id.is_some()
     }
 }
 

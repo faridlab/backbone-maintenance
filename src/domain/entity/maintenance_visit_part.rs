@@ -49,7 +49,6 @@ impl std::ops::Deref for MaintenanceVisitPartId {
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct MaintenanceVisitPart {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub visit_id: Uuid,
     pub item_id: Uuid,
     pub quantity: Decimal,
@@ -67,10 +66,9 @@ impl MaintenanceVisitPart {
     }
 
     /// Create a new MaintenanceVisitPart with required fields
-    pub fn new(company_id: Uuid, visit_id: Uuid, item_id: Uuid, quantity: Decimal, unit_cost: Decimal, amount: Decimal) -> Self {
+    pub fn new(visit_id: Uuid, item_id: Uuid, quantity: Decimal, unit_cost: Decimal, amount: Decimal) -> Self {
         Self {
             id: Uuid::new_v4(),
-            company_id,
             visit_id,
             item_id,
             quantity,
@@ -139,9 +137,6 @@ impl MaintenanceVisitPart {
     pub fn apply_patch(&mut self, fields: std::collections::HashMap<String, serde_json::Value>) {
         for (key, value) in fields {
             match key.as_str() {
-                "company_id" => {
-                    if let Ok(v) = serde_json::from_value(value) { self.company_id = v; }
-                }
                 "visit_id" => {
                     if let Ok(v) = serde_json::from_value(value) { self.visit_id = v; }
                 }
@@ -211,16 +206,12 @@ impl backbone_orm::EntityRepoMeta for MaintenanceVisitPart {
     fn column_types() -> std::collections::HashMap<String, String> {
         let mut m = std::collections::HashMap::new();
         m.insert("id".to_string(), "uuid".to_string());
-        m.insert("company_id".to_string(), "uuid".to_string());
         m.insert("visit_id".to_string(), "uuid".to_string());
         m.insert("item_id".to_string(), "uuid".to_string());
         m
     }
     fn search_fields() -> &'static [&'static str] {
         &[]
-    }
-    fn company_field() -> Option<&'static str> {
-        Some("company_id")
     }
 }
 
@@ -230,7 +221,6 @@ impl backbone_orm::EntityRepoMeta for MaintenanceVisitPart {
 /// System fields (id, metadata, timestamps) are auto-initialized.
 #[derive(Debug, Clone, Default)]
 pub struct MaintenanceVisitPartBuilder {
-    company_id: Option<Uuid>,
     visit_id: Option<Uuid>,
     item_id: Option<Uuid>,
     quantity: Option<Decimal>,
@@ -239,12 +229,6 @@ pub struct MaintenanceVisitPartBuilder {
 }
 
 impl MaintenanceVisitPartBuilder {
-    /// Set the company_id field (required)
-    pub fn company_id(mut self, value: Uuid) -> Self {
-        self.company_id = Some(value);
-        self
-    }
-
     /// Set the visit_id field (required)
     pub fn visit_id(mut self, value: Uuid) -> Self {
         self.visit_id = Some(value);
@@ -279,13 +263,11 @@ impl MaintenanceVisitPartBuilder {
     ///
     /// Returns Err if any required field without a default is missing.
     pub fn build(self) -> Result<MaintenanceVisitPart, String> {
-        let company_id = self.company_id.ok_or_else(|| "company_id is required".to_string())?;
         let visit_id = self.visit_id.ok_or_else(|| "visit_id is required".to_string())?;
         let item_id = self.item_id.ok_or_else(|| "item_id is required".to_string())?;
 
         Ok(MaintenanceVisitPart {
             id: Uuid::new_v4(),
-            company_id,
             visit_id,
             item_id,
             quantity: self.quantity.unwrap_or(Decimal::from(0)),

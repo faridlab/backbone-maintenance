@@ -14,7 +14,7 @@ use rust_decimal::Decimal;
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
-use backbone_orm::company_scope;
+use backbone_orm::{company_scope, org_scope};
 
 use crate::domain::entity::MaintenanceRequest;
 
@@ -48,7 +48,6 @@ impl MaintenanceRequestRepository {
 /// rather than a deserialize panic.
 pub struct NewRequestRow<'a> {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub name: &'a str,
     pub description: Option<&'a str>,
     pub schedule_date: Option<DateTime<Utc>>,
@@ -73,7 +72,6 @@ pub struct NewRequestRow<'a> {
 /// A request's full state as the transition path reads it — `stage_done` joins in the CURRENT stage's
 /// done flag (the canonical closed flag the engine keys off).
 pub struct RequestTransitionRow {
-    pub company_id: Uuid,
     pub name: String,
     pub description: Option<String>,
     pub schedule_date: Option<DateTime<Utc>>,
@@ -100,7 +98,6 @@ pub struct RequestTransitionRow {
 /// A stage row as the request path reads it (visible through the shared_blank policy).
 pub struct StageRefRow {
     pub id: Uuid,
-    pub company_id: Option<Uuid>,
     pub name: String,
     pub sequence: i32,
     pub done: bool,
@@ -152,8 +149,8 @@ impl<'a> RequestFieldUpdates<'a> {
 /// rule: services orchestrate and own the unit of work, repositories hold the SQL.
 impl MaintenanceRequestRepository {
     /// Insert a request on the caller's connection (the transition transaction uses this for the
-    /// successor spawn). The caller has already bound the company (`bind_company_on`) so the INSERT
-    /// passes the WITH CHECK fence.
+    /// successor spawn). The caller has already relayed the ambient org scope onto the connection
+    /// so the INSERT passes the fence's WITH CHECK.
     pub async fn insert_request_on(
         &self,
         conn: &mut sqlx::PgConnection,
@@ -161,15 +158,15 @@ impl MaintenanceRequestRepository {
     ) -> Result<(), sqlx::Error> {
         sqlx::query(
             r#"INSERT INTO maintenance.maintenance_requests
-                 (id, company_id, name, description, schedule_date, schedule_end, duration,
+                 (id, name, description, schedule_date, schedule_end, duration,
                   owner_user_id, user_id, asset_id, stage_id, kanban_state, priority,
                   maintenance_type, recurring, repeat_interval, repeat_unit, repeat_type,
                   repeat_until, successor_of_request_id)
-               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::request_kanban_state,
-                       $13::request_priority,$14::maintenance_type,$15,$16,$17::repeat_unit,
-                       $18::repeat_type,$19,$20)"#,
+               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::request_kanban_state,
+                       $12::request_priority,$13::maintenance_type,$14,$15,$16::repeat_unit,
+                       $17::repeat_type,$18,$19)"#,
         )
-        .bind(r.id).bind(r.company_id).bind(r.name).bind(r.description)
+        .bind(r.id).bind(r.name).bind(r.description)
         .bind(r.schedule_date).bind(r.schedule_end).bind(r.duration)
         .bind(r.owner_user_id).bind(r.user_id).bind(r.asset_id).bind(r.stage_id)
         .bind(r.kanban_state).bind(r.priority).bind(r.maintenance_type).bind(r.recurring)
@@ -180,26 +177,27 @@ impl MaintenanceRequestRepository {
         Ok(())
     }
 
-    /// Insert a request outside a transaction. Runs on the pool via `execute_scoped`; the caller wraps
-    /// it in `with_company_scope(Some(company_id))` so the INSERT passes the WITH CHECK fence.
+    /// Insert a request outside a transaction. Runs on the pool via `execute_scoped` under the
+    /// ambient org scope, so the INSERT passes the fence's WITH CHECK (the decorator's fill
+    /// stamps the acting unit when the org column rides the composed shape).
     pub async fn insert_request(
         &self,
         pool: &PgPool,
         r: &NewRequestRow<'_>,
     ) -> Result<(), sqlx::Error> {
-        company_scope::execute_scoped(
+        org_scope::execute_scoped(
             pool,
             sqlx::query(
                 r#"INSERT INTO maintenance.maintenance_requests
-                     (id, company_id, name, description, schedule_date, schedule_end, duration,
+                     (id, name, description, schedule_date, schedule_end, duration,
                       owner_user_id, user_id, asset_id, stage_id, kanban_state, priority,
                       maintenance_type, recurring, repeat_interval, repeat_unit, repeat_type,
                       repeat_until, successor_of_request_id)
-                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::request_kanban_state,
-                           $13::request_priority,$14::maintenance_type,$15,$16,$17::repeat_unit,
-                           $18::repeat_type,$19,$20)"#,
+                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::request_kanban_state,
+                           $12::request_priority,$13::maintenance_type,$14,$15,$16::repeat_unit,
+                           $17::repeat_type,$18,$19)"#,
             )
-            .bind(r.id).bind(r.company_id).bind(r.name).bind(r.description)
+            .bind(r.id).bind(r.name).bind(r.description)
             .bind(r.schedule_date).bind(r.schedule_end).bind(r.duration)
             .bind(r.owner_user_id).bind(r.user_id).bind(r.asset_id).bind(r.stage_id)
             .bind(r.kanban_state).bind(r.priority).bind(r.maintenance_type).bind(r.recurring)
@@ -221,7 +219,7 @@ impl MaintenanceRequestRepository {
         let row = company_scope::fetch_optional_row_scoped(
             pool,
             sqlx::query(
-                r#"SELECT r.company_id, r.name, r.description, r.schedule_date, r.schedule_end,
+                r#"SELECT r.name, r.description, r.schedule_date, r.schedule_end,
                           r.close_date, r.duration, r.owner_user_id, r.user_id, r.asset_id,
                           r.stage_id, r.kanban_state::text AS kanban_state,
                           r.priority::text AS priority, r.maintenance_type::text AS maintenance_type,
@@ -236,7 +234,6 @@ impl MaintenanceRequestRepository {
         )
         .await?;
         Ok(row.map(|r| RequestTransitionRow {
-            company_id: r.get("company_id"),
             name: r.get("name"),
             description: r.get("description"),
             schedule_date: r.get("schedule_date"),
@@ -260,8 +257,8 @@ impl MaintenanceRequestRepository {
         }))
     }
 
-    /// A stage row, visible through the shared_blank policy (the shared NULL-company stages are
-    /// visible to every scoped session). `Ok(None)` when absent or soft-deleted.
+    /// A stage row. The shared stage set is root-anchored in the composed shape, so every
+    /// entitled scope sees it through the scope union. `Ok(None)` when absent or soft-deleted.
     pub async fn fetch_stage(
         &self,
         pool: &PgPool,
@@ -270,7 +267,7 @@ impl MaintenanceRequestRepository {
         let row = company_scope::fetch_optional_row_scoped(
             pool,
             sqlx::query(
-                r#"SELECT id, company_id, name, sequence, done
+                r#"SELECT id, name, sequence, done
                      FROM maintenance.maintenance_stages
                     WHERE id = $1 AND (metadata->>'deleted_at') IS NULL"#,
             )
@@ -279,7 +276,6 @@ impl MaintenanceRequestRepository {
         .await?;
         Ok(row.map(|r| StageRefRow {
             id: r.get("id"),
-            company_id: r.get("company_id"),
             name: r.get("name"),
             sequence: r.get("sequence"),
             done: r.get("done"),
@@ -387,7 +383,7 @@ impl MaintenanceRequestRepository {
         request_id: Uuid,
         u: &RequestFieldUpdates<'_>,
     ) -> Result<u64, sqlx::Error> {
-        let r = company_scope::execute_scoped(
+        let r = org_scope::execute_scoped(
             pool,
             sqlx::query(
                 r#"UPDATE maintenance.maintenance_requests SET

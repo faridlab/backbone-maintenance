@@ -50,7 +50,6 @@ impl std::ops::Deref for MaintenanceScheduleId {
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct MaintenanceSchedule {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub asset_id: Uuid,
     pub name: String,
     pub interval_days: i32,
@@ -68,10 +67,9 @@ impl MaintenanceSchedule {
     }
 
     /// Create a new MaintenanceSchedule with required fields
-    pub fn new(company_id: Uuid, asset_id: Uuid, name: String, interval_days: i32, next_due_date: NaiveDate, status: MaintenanceScheduleStatus) -> Self {
+    pub fn new(asset_id: Uuid, name: String, interval_days: i32, next_due_date: NaiveDate, status: MaintenanceScheduleStatus) -> Self {
         Self {
             id: Uuid::new_v4(),
-            company_id,
             asset_id,
             name,
             interval_days,
@@ -145,9 +143,6 @@ impl MaintenanceSchedule {
     pub fn apply_patch(&mut self, fields: std::collections::HashMap<String, serde_json::Value>) {
         for (key, value) in fields {
             match key.as_str() {
-                "company_id" => {
-                    if let Ok(v) = serde_json::from_value(value) { self.company_id = v; }
-                }
                 "asset_id" => {
                     if let Ok(v) = serde_json::from_value(value) { self.asset_id = v; }
                 }
@@ -217,16 +212,12 @@ impl backbone_orm::EntityRepoMeta for MaintenanceSchedule {
     fn column_types() -> std::collections::HashMap<String, String> {
         let mut m = std::collections::HashMap::new();
         m.insert("id".to_string(), "uuid".to_string());
-        m.insert("company_id".to_string(), "uuid".to_string());
         m.insert("asset_id".to_string(), "uuid".to_string());
         m.insert("status".to_string(), "maintenance_schedule_status".to_string());
         m
     }
     fn search_fields() -> &'static [&'static str] {
         &["name"]
-    }
-    fn company_field() -> Option<&'static str> {
-        Some("company_id")
     }
 }
 
@@ -236,7 +227,6 @@ impl backbone_orm::EntityRepoMeta for MaintenanceSchedule {
 /// System fields (id, metadata, timestamps) are auto-initialized.
 #[derive(Debug, Clone, Default)]
 pub struct MaintenanceScheduleBuilder {
-    company_id: Option<Uuid>,
     asset_id: Option<Uuid>,
     name: Option<String>,
     interval_days: Option<i32>,
@@ -245,12 +235,6 @@ pub struct MaintenanceScheduleBuilder {
 }
 
 impl MaintenanceScheduleBuilder {
-    /// Set the company_id field (required)
-    pub fn company_id(mut self, value: Uuid) -> Self {
-        self.company_id = Some(value);
-        self
-    }
-
     /// Set the asset_id field (required)
     pub fn asset_id(mut self, value: Uuid) -> Self {
         self.asset_id = Some(value);
@@ -285,7 +269,6 @@ impl MaintenanceScheduleBuilder {
     ///
     /// Returns Err if any required field without a default is missing.
     pub fn build(self) -> Result<MaintenanceSchedule, String> {
-        let company_id = self.company_id.ok_or_else(|| "company_id is required".to_string())?;
         let asset_id = self.asset_id.ok_or_else(|| "asset_id is required".to_string())?;
         let name = self.name.ok_or_else(|| "name is required".to_string())?;
         let interval_days = self.interval_days.ok_or_else(|| "interval_days is required".to_string())?;
@@ -293,7 +276,6 @@ impl MaintenanceScheduleBuilder {
 
         Ok(MaintenanceSchedule {
             id: Uuid::new_v4(),
-            company_id,
             asset_id,
             name,
             interval_days,

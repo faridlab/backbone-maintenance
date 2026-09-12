@@ -49,7 +49,6 @@ impl From<MaintenanceRequestId> for Uuid {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MaintenanceRequestDto {
     pub id: MaintenanceRequestId,
-    pub company_id: Uuid,
     pub name: String,
     pub description: Option<String>,
     pub request_date: NaiveDate,
@@ -125,7 +124,6 @@ impl From<MaintenanceScheduleId> for Uuid {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MaintenanceScheduleDto {
     pub id: MaintenanceScheduleId,
-    pub company_id: Uuid,
     pub asset_id: Uuid,
     pub name: String,
     pub interval_days: i32,
@@ -186,7 +184,6 @@ impl From<MaintenanceStageId> for Uuid {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MaintenanceStageDto {
     pub id: MaintenanceStageId,
-    pub company_id: Option<Uuid>,
     pub name: String,
     pub sequence: i32,
     pub fold: bool,
@@ -245,7 +242,6 @@ impl From<MaintenanceVisitId> for Uuid {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MaintenanceVisitDto {
     pub id: MaintenanceVisitId,
-    pub company_id: Uuid,
     pub asset_id: Uuid,
     pub schedule_id: Option<Uuid>,
     pub maintenance_type: MaintenanceType,
@@ -317,7 +313,6 @@ impl From<MaintenanceVisitPartId> for Uuid {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MaintenanceVisitPartDto {
     pub id: MaintenanceVisitPartId,
-    pub company_id: Uuid,
     pub visit_id: Uuid,
     pub item_id: Uuid,
     pub quantity: Decimal,

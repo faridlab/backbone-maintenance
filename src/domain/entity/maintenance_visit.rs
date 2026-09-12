@@ -52,7 +52,6 @@ impl std::ops::Deref for MaintenanceVisitId {
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct MaintenanceVisit {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub asset_id: Uuid,
     pub schedule_id: Option<Uuid>,
     pub maintenance_type: MaintenanceType,
@@ -82,10 +81,9 @@ impl MaintenanceVisit {
     }
 
     /// Create a new MaintenanceVisit with required fields
-    pub fn new(company_id: Uuid, asset_id: Uuid, maintenance_type: MaintenanceType, status: VisitStatus, scheduled_date: NaiveDate, labor_cost: Decimal, parts_cost: Decimal, total_cost: Decimal) -> Self {
+    pub fn new(asset_id: Uuid, maintenance_type: MaintenanceType, status: VisitStatus, scheduled_date: NaiveDate, labor_cost: Decimal, parts_cost: Decimal, total_cost: Decimal) -> Self {
         Self {
             id: Uuid::new_v4(),
-            company_id,
             asset_id,
             schedule_id: None,
             maintenance_type,
@@ -235,9 +233,6 @@ impl MaintenanceVisit {
     pub fn apply_patch(&mut self, fields: std::collections::HashMap<String, serde_json::Value>) {
         for (key, value) in fields {
             match key.as_str() {
-                "company_id" => {
-                    if let Ok(v) = serde_json::from_value(value) { self.company_id = v; }
-                }
                 "asset_id" => {
                     if let Ok(v) = serde_json::from_value(value) { self.asset_id = v; }
                 }
@@ -343,7 +338,6 @@ impl backbone_orm::EntityRepoMeta for MaintenanceVisit {
     fn column_types() -> std::collections::HashMap<String, String> {
         let mut m = std::collections::HashMap::new();
         m.insert("id".to_string(), "uuid".to_string());
-        m.insert("company_id".to_string(), "uuid".to_string());
         m.insert("asset_id".to_string(), "uuid".to_string());
         m.insert("schedule_id".to_string(), "uuid".to_string());
         m.insert("warehouse_id".to_string(), "uuid".to_string());
@@ -360,9 +354,6 @@ impl backbone_orm::EntityRepoMeta for MaintenanceVisit {
     fn search_fields() -> &'static [&'static str] {
         &[]
     }
-    fn company_field() -> Option<&'static str> {
-        Some("company_id")
-    }
 }
 
 /// Builder for MaintenanceVisit entity
@@ -371,7 +362,6 @@ impl backbone_orm::EntityRepoMeta for MaintenanceVisit {
 /// System fields (id, metadata, timestamps) are auto-initialized.
 #[derive(Debug, Clone, Default)]
 pub struct MaintenanceVisitBuilder {
-    company_id: Option<Uuid>,
     asset_id: Option<Uuid>,
     schedule_id: Option<Uuid>,
     maintenance_type: Option<MaintenanceType>,
@@ -392,12 +382,6 @@ pub struct MaintenanceVisitBuilder {
 }
 
 impl MaintenanceVisitBuilder {
-    /// Set the company_id field (required)
-    pub fn company_id(mut self, value: Uuid) -> Self {
-        self.company_id = Some(value);
-        self
-    }
-
     /// Set the asset_id field (required)
     pub fn asset_id(mut self, value: Uuid) -> Self {
         self.asset_id = Some(value);
@@ -504,13 +488,11 @@ impl MaintenanceVisitBuilder {
     ///
     /// Returns Err if any required field without a default is missing.
     pub fn build(self) -> Result<MaintenanceVisit, String> {
-        let company_id = self.company_id.ok_or_else(|| "company_id is required".to_string())?;
         let asset_id = self.asset_id.ok_or_else(|| "asset_id is required".to_string())?;
         let scheduled_date = self.scheduled_date.ok_or_else(|| "scheduled_date is required".to_string())?;
 
         Ok(MaintenanceVisit {
             id: Uuid::new_v4(),
-            company_id,
             asset_id,
             schedule_id: self.schedule_id,
             maintenance_type: self.maintenance_type.unwrap_or_default(),

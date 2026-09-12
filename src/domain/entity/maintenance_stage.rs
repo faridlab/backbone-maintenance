@@ -48,7 +48,6 @@ impl std::ops::Deref for MaintenanceStageId {
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct MaintenanceStage {
     pub id: Uuid,
-    pub company_id: Option<Uuid>,
     pub name: String,
     pub sequence: i32,
     pub fold: bool,
@@ -68,7 +67,6 @@ impl MaintenanceStage {
     pub fn new(name: String, sequence: i32, fold: bool, done: bool) -> Self {
         Self {
             id: Uuid::new_v4(),
-            company_id: None,
             name,
             sequence,
             fold,
@@ -129,16 +127,6 @@ impl MaintenanceStage {
 
 
     // ==========================================================
-    // Fluent Setters (with_* for optional fields)
-    // ==========================================================
-
-    /// Set the company_id field (chainable)
-    pub fn with_company_id(mut self, value: Uuid) -> Self {
-        self.company_id = Some(value);
-        self
-    }
-
-    // ==========================================================
     // Partial Update
     // ==========================================================
 
@@ -146,9 +134,6 @@ impl MaintenanceStage {
     pub fn apply_patch(&mut self, fields: std::collections::HashMap<String, serde_json::Value>) {
         for (key, value) in fields {
             match key.as_str() {
-                "company_id" => {
-                    if let Ok(v) = serde_json::from_value(value) { self.company_id = v; }
-                }
                 "name" => {
                     if let Ok(v) = serde_json::from_value(value) { self.name = v; }
                 }
@@ -215,14 +200,10 @@ impl backbone_orm::EntityRepoMeta for MaintenanceStage {
     fn column_types() -> std::collections::HashMap<String, String> {
         let mut m = std::collections::HashMap::new();
         m.insert("id".to_string(), "uuid".to_string());
-        m.insert("company_id".to_string(), "uuid".to_string());
         m
     }
     fn search_fields() -> &'static [&'static str] {
         &["name"]
-    }
-    fn company_field() -> Option<&'static str> {
-        Some("company_id")
     }
 }
 
@@ -232,7 +213,6 @@ impl backbone_orm::EntityRepoMeta for MaintenanceStage {
 /// System fields (id, metadata, timestamps) are auto-initialized.
 #[derive(Debug, Clone, Default)]
 pub struct MaintenanceStageBuilder {
-    company_id: Option<Uuid>,
     name: Option<String>,
     sequence: Option<i32>,
     fold: Option<bool>,
@@ -240,12 +220,6 @@ pub struct MaintenanceStageBuilder {
 }
 
 impl MaintenanceStageBuilder {
-    /// Set the company_id field (optional)
-    pub fn company_id(mut self, value: Uuid) -> Self {
-        self.company_id = Some(value);
-        self
-    }
-
     /// Set the name field (required)
     pub fn name(mut self, value: String) -> Self {
         self.name = Some(value);
@@ -278,7 +252,6 @@ impl MaintenanceStageBuilder {
 
         Ok(MaintenanceStage {
             id: Uuid::new_v4(),
-            company_id: self.company_id,
             name,
             sequence: self.sequence.unwrap_or(20),
             fold: self.fold.unwrap_or(false),

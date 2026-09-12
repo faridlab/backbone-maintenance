@@ -10,9 +10,9 @@ use backbone_maintenance::application::service::maintenance_write_service::*;
 use rust_decimal::Decimal;
 use uuid::Uuid;
 
-async fn planned(pool: &sqlx::PgPool, svc: &MaintenanceWriteService, a: &MxAccounts, company: Uuid, warehouse: Uuid) -> Uuid {
+async fn planned(pool: &sqlx::PgPool, svc: &MaintenanceWriteService, a: &MxAccounts, _company: Uuid, warehouse: Uuid) -> Uuid {
     let visit = svc.plan_visit(NewVisit {
-        company_id: company, asset_id: Uuid::new_v4(), schedule_id: None, maintenance_type: "corrective".into(),
+        asset_id: Uuid::new_v4(), schedule_id: None, maintenance_type: "corrective".into(),
         scheduled_date: today(), warehouse_id: Some(warehouse), warranty_claim_id: None, labor_cost: dec("300000"),
         maintenance_expense_account_id: a.expense, parts_inventory_account_id: a.parts_inventory,
         labor_payable_account_id: a.labor_payable,
@@ -29,7 +29,7 @@ async fn mseam1_cost_journal_lands_balanced() {
     let pool = pool().await;
     let company = Uuid::new_v4();
     let warehouse = Uuid::new_v4();
-    let a = mx_accounts(&pool, company).await;
+    let a = mx_accounts(&pool).await;
     let svc = MaintenanceWriteService::new(pool.clone());
     let gl = GlAdapter::new(pool.clone());
     let inv = FakeInventory::new("10000");
@@ -51,7 +51,7 @@ async fn mseam2_recomplete_reuses_journal() {
     let pool = pool().await;
     let company = Uuid::new_v4();
     let warehouse = Uuid::new_v4();
-    let a = mx_accounts(&pool, company).await;
+    let a = mx_accounts(&pool).await;
     let svc = MaintenanceWriteService::new(pool.clone());
     let gl = GlAdapter::new(pool.clone());
     let inv = FakeInventory::new("10000");

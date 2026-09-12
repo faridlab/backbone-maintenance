@@ -24,7 +24,6 @@ impl TestDataGenerator for MaintenanceVisitPartTestData {
         let now = Utc::now().to_rfc3339();
         json!({
             "id": Uuid::new_v4().to_string(),
-            "company_id": Uuid::new_v4().to_string(),
             "visit_id": Uuid::new_v4().to_string(),
             "item_id": Uuid::new_v4().to_string(),
             "quantity": 0,
@@ -38,7 +37,6 @@ impl TestDataGenerator for MaintenanceVisitPartTestData {
         let now = Utc::now().to_rfc3339();
         json!({
             "id": id,
-            "company_id": Uuid::new_v4().to_string(),
             "visit_id": Uuid::new_v4().to_string(),
             "item_id": Uuid::new_v4().to_string(),
             "quantity": 0,

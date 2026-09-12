@@ -13,7 +13,7 @@ use rust_decimal::Decimal;
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
-use backbone_orm::company_scope;
+use backbone_orm::{company_scope, org_scope};
 
 use crate::domain::entity::MaintenanceVisitPart;
 
@@ -52,35 +52,33 @@ pub struct VisitPartRow {
 impl MaintenanceVisitPartRepository {
     /// Add a part line to a visit (quantity only; `unit_cost`/`amount` are valued on completion).
     ///
-    /// `company_id` is bound on the INSERT so the row passes the `WITH CHECK` clause of the
-    /// maintenance_visit_parts RLS policy (ADR-0010 Decision A). The caller threads the in-scope
-    /// company (the visit's owner) and wraps the call in `with_company_scope(Some(company_id), ...)`
-    /// so `app.company_id` is also set on the connection — both the WITH CHECK and the visit-status
-    /// check the caller makes first fence the line to a visit it may see.
+    /// Runs on the pool via `org_scope::execute_scoped`, which binds the ambient org scope (the
+    /// composing service sets it per request) so the INSERT passes the decorator's WITH CHECK
+    /// fence; the decorator's fill trigger stamps the acting unit (ADR-0029). The visit-status
+    /// check the caller makes first already fences the line to a visit it may see. Undecorated
+    /// (module tests) the insert runs plain.
     pub async fn insert_part(
         &self,
         pool: &PgPool,
         id: Uuid,
-        company_id: Uuid,
         visit_id: Uuid,
         item_id: Uuid,
         quantity: Decimal,
     ) -> Result<(), sqlx::Error> {
-        company_scope::execute_scoped(
+        org_scope::execute_scoped(
             pool,
             sqlx::query(
                 r#"INSERT INTO maintenance.maintenance_visit_parts
-                       (id, company_id, visit_id, item_id, quantity, unit_cost, amount)
-                   VALUES ($1,$2,$3,$4,$5,0,0)"#,
+                       (id, visit_id, item_id, quantity, unit_cost, amount)
+                   VALUES ($1,$2,$3,$4,0,0)"#,
             )
-            .bind(id).bind(company_id).bind(visit_id).bind(item_id).bind(quantity),
+            .bind(id).bind(visit_id).bind(item_id).bind(quantity),
         )
         .await?;
         Ok(())
     }
 
-    /// The visit's frozen part set. Caller supplies the company scope
-    /// (`with_company_scope(Some(company_id))`).
+    /// The visit's frozen part set (caller-scoped — rides the org-bound request connection).
     pub async fn list_for_visit(
         &self,
         pool: &PgPool,
@@ -103,8 +101,8 @@ impl MaintenanceVisitPartRepository {
     }
 
     /// Write back the valuation inventory returned for one line (moving-average rate and extended
-    /// value). Caller supplies the company scope, as above; both values are expected already
-    /// money-rounded.
+    /// value). Runs via `org_scope::execute_scoped` under the ambient org scope; both values are
+    /// expected already money-rounded.
     pub async fn set_valuation(
         &self,
         pool: &PgPool,
@@ -113,7 +111,7 @@ impl MaintenanceVisitPartRepository {
         unit_cost: Decimal,
         amount: Decimal,
     ) -> Result<(), sqlx::Error> {
-        company_scope::execute_scoped(
+        org_scope::execute_scoped(
             pool,
             sqlx::query(
                 r#"UPDATE maintenance.maintenance_visit_parts SET unit_cost=$3, amount=$4

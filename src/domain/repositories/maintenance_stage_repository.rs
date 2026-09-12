@@ -7,7 +7,6 @@
 
 use async_trait::async_trait;
 use anyhow::Result;
-use uuid::Uuid;
 
 use crate::domain::entity::MaintenanceStage;
 
@@ -44,7 +43,6 @@ pub struct MaintenanceStagePaginatedResult {
 /// Filter parameters for list queries
 #[derive(Debug, Clone, Default)]
 pub struct MaintenanceStageFilter {
-    pub company_id: Option<Uuid>,
     pub name: Option<String>,
     pub fold: Option<bool>,
     pub done: Option<bool>,
@@ -53,7 +51,7 @@ pub struct MaintenanceStageFilter {
 impl MaintenanceStageFilter {
     /// Check if any filter is set
     pub fn has_filters(&self) -> bool {
-        self.company_id.is_some() || self.name.is_some() || self.fold.is_some() || self.done.is_some()
+        self.name.is_some() || self.fold.is_some() || self.done.is_some()
     }
 }
 

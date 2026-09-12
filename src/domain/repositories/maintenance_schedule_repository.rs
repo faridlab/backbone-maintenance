@@ -44,7 +44,6 @@ pub struct MaintenanceSchedulePaginatedResult {
 /// Filter parameters for list queries
 #[derive(Debug, Clone, Default)]
 pub struct MaintenanceScheduleFilter {
-    pub company_id: Option<Uuid>,
     pub asset_id: Option<Uuid>,
     pub name: Option<String>,
     pub status: Option<MaintenanceScheduleStatus>,
@@ -53,7 +52,7 @@ pub struct MaintenanceScheduleFilter {
 impl MaintenanceScheduleFilter {
     /// Check if any filter is set
     pub fn has_filters(&self) -> bool {
-        self.company_id.is_some() || self.asset_id.is_some() || self.name.is_some() || self.status.is_some()
+        self.asset_id.is_some() || self.name.is_some() || self.status.is_some()
     }
 }
 

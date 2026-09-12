@@ -14,7 +14,7 @@ use rust_decimal::Decimal;
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
-use backbone_orm::company_scope;
+use backbone_orm::{company_scope, org_scope};
 
 use crate::domain::entity::MaintenanceVisit;
 
@@ -48,7 +48,6 @@ impl MaintenanceVisitRepository {
 /// than a deserialize panic. `labor_cost` is expected already money-rounded by the caller.
 pub struct NewVisitRow<'a> {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub asset_id: Uuid,
     pub schedule_id: Option<Uuid>,
     pub maintenance_type: &'a str,
@@ -64,7 +63,6 @@ pub struct NewVisitRow<'a> {
 /// A visit's state as the completion path reads it — the accounts are `Option` because the columns are
 /// nullable, and the service turns a missing one into a domain error.
 pub struct VisitCompletionRow {
-    pub company_id: Uuid,
     pub asset_id: Uuid,
     pub status: String,
     pub warehouse_id: Option<Uuid>,
@@ -92,19 +90,21 @@ pub struct VisitCompletion {
 impl MaintenanceVisitRepository {
     /// Plan a visit (`planned`). Preventive visits reference a schedule; corrective ones don't.
     ///
-    /// Runs outside a transaction on the pool via `execute_scoped`; the caller wraps it in
-    /// `with_company_scope(Some(company_id))` so the INSERT passes the WITH CHECK fence (ADR-0008).
+    /// Runs outside a transaction on the pool via `org_scope::execute_scoped`, which binds the
+    /// ambient org scope (the composing service sets it per request) so the INSERT passes the
+    /// decorator's WITH CHECK fence; the decorator's fill trigger stamps the acting unit
+    /// (ADR-0029). Undecorated (module tests) the insert runs plain.
     pub async fn insert_visit(&self, pool: &PgPool, v: &NewVisitRow<'_>) -> Result<(), sqlx::Error> {
-        company_scope::execute_scoped(
+        org_scope::execute_scoped(
             pool,
             sqlx::query(
                 r#"INSERT INTO maintenance.maintenance_visits
-                     (id, company_id, asset_id, schedule_id, maintenance_type, status, warehouse_id,
+                     (id, asset_id, schedule_id, maintenance_type, status, warehouse_id,
                       warranty_claim_id, scheduled_date, labor_cost, parts_cost, total_cost,
                       maintenance_expense_account_id, parts_inventory_account_id, labor_payable_account_id)
-                   VALUES ($1,$2,$3,$4,$5::maintenance_type,'planned'::visit_status,$6,$7,$8,$9,0,0,$10,$11,$12)"#,
+                   VALUES ($1,$2,$3,$4::maintenance_type,'planned'::visit_status,$5,$6,$7,$8,0,0,$9,$10,$11)"#,
             )
-            .bind(v.id).bind(v.company_id).bind(v.asset_id).bind(v.schedule_id).bind(v.maintenance_type)
+            .bind(v.id).bind(v.asset_id).bind(v.schedule_id).bind(v.maintenance_type)
             .bind(v.warehouse_id).bind(v.warranty_claim_id).bind(v.scheduled_date).bind(v.labor_cost)
             .bind(v.maintenance_expense_account_id).bind(v.parts_inventory_account_id)
             .bind(v.labor_payable_account_id),
@@ -115,8 +115,8 @@ impl MaintenanceVisitRepository {
 
     /// A live visit's status, or `Ok(None)` when it is absent/soft-deleted.
     ///
-    /// ID-only: no company argument. `fetch_optional_scalar_scoped` means it rides a connection carrying
-    /// the caller's `app.company_id`, so another company's visit simply is not found.
+    /// ID-only: no scope argument. `fetch_optional_scalar_scoped` means it rides the caller-scoped
+    /// connection, so a visit outside the caller's org scope simply is not found.
     pub async fn fetch_status(
         &self,
         pool: &PgPool,
@@ -142,7 +142,7 @@ impl MaintenanceVisitRepository {
         let row = company_scope::fetch_optional_row_scoped(
             pool,
             sqlx::query(
-                r#"SELECT company_id, asset_id, status::text AS status, warehouse_id, labor_cost,
+                r#"SELECT asset_id, status::text AS status, warehouse_id, labor_cost,
                           maintenance_expense_account_id, parts_inventory_account_id, labor_payable_account_id,
                           journal_id, total_cost, schedule_id, maintenance_type::text AS maintenance_type
                    FROM maintenance.maintenance_visits WHERE id=$1 AND (metadata->>'deleted_at') IS NULL"#,
@@ -151,7 +151,6 @@ impl MaintenanceVisitRepository {
         )
         .await?;
         Ok(row.map(|r| VisitCompletionRow {
-            company_id: r.get("company_id"),
             asset_id: r.get("asset_id"),
             status: r.get("status"),
             warehouse_id: r.get("warehouse_id"),
@@ -177,7 +176,7 @@ impl MaintenanceVisitRepository {
         pool: &PgPool,
         visit_id: Uuid,
     ) -> Result<u64, sqlx::Error> {
-        let r = company_scope::execute_scoped(
+        let r = org_scope::execute_scoped(
             pool,
             sqlx::query(
                 r#"UPDATE maintenance.maintenance_visits SET status='in_progress'::visit_status
@@ -194,7 +193,7 @@ impl MaintenanceVisitRepository {
     /// the caller must roll back and re-read the winner.
     ///
     /// Takes the CALLER'S connection so this, the schedule advance, and the outbox stage commit as one
-    /// unit. The caller has already bound the company on it (`bind_company_on`) — don't re-bind here.
+    /// unit. The caller has already relayed the ambient org scope onto it — don't re-bind here.
     pub async fn complete(
         &self,
         conn: &mut sqlx::PgConnection,
@@ -231,7 +230,7 @@ impl MaintenanceVisitRepository {
     /// Cancel an open (planned/in_progress) visit. Returns the rows affected; 0 means it was not open.
     /// Same ID-only, caller-scoped contract as [`Self::fetch_status`].
     pub async fn cancel(&self, pool: &PgPool, visit_id: Uuid) -> Result<u64, sqlx::Error> {
-        let r = company_scope::execute_scoped(
+        let r = org_scope::execute_scoped(
             pool,
             sqlx::query(
                 r#"UPDATE maintenance.maintenance_visits SET status='cancelled'::visit_status

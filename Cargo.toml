@@ -1,6 +1,6 @@
 [package]
 name = "backbone-maintenance"
-version = "0.6.4"
+version = "0.7.0"
 edition = "2021"
 description = "Minimal Backbone Framework module skeleton"
 
@@ -22,7 +22,11 @@ backbone-orm = { git = "https://github.com/faridlab/backbone-framework", tag = "
 backbone-auth = { git = "https://github.com/faridlab/backbone-framework", tag = "v2.7.17" }
 backbone-messaging = { git = "https://github.com/faridlab/backbone-framework", tag = "v2.7.17" }
 # Transactional outbox — MaintenanceCompleted is staged in the same tx as the completion (durable).
-backbone-outbox = { git = "https://github.com/faridlab/backbone-framework", tag = "v2.7.17", features = ["multi_tenant"] }
+# The outbox record carries a company field as the shared crate's wire contract (the legacy
+# echo fills it; nil undecorated) — the module never keys a statement on it and never
+# runs the outbox migrate, so the multi-tenant fence feature stays off: the module is
+# tenant-agnostic and the composing service owns isolation.
+backbone-outbox = { git = "https://github.com/faridlab/backbone-framework", tag = "v2.7.17" }
 
 # Core async runtime and serialization
 tokio = { version = "1.0", features = ["full"] }

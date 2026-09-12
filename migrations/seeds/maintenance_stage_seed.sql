@@ -5,18 +5,19 @@
 -- Customize this file to add your initial data.
 
 -- <<< CUSTOM SEED DATA >>>
--- The one shared stage set (NULL company_id — visible to every company session; see the
--- fence posture map in schema/models/index.model.yaml). Fixed ids so callers (and tests)
--- can address the seeded stages deterministically. Idempotent: re-running is a no-op.
+-- The one shared stage set — tenant-shared rows (ADR-0029: the module is tenant-agnostic; the
+-- composing decorator anchors shared masters at the tenant ROOT with allow_root, and the scope
+-- union carries the one-shared-set semantics). Fixed ids so callers (and tests) can address the
+-- seeded stages deterministically. Idempotent: re-running is a no-op.
 --
 -- Mirrors the Odoo default stages New Request / In Progress / Repaired / Scrap: entering
 -- Repaired or Scrap closes a request (done = true is the canonical closed flag) and, for a
 -- preventive recurring request, spawns the successor. Odoo's numeric stage ids skip
 -- stage_2 upstream (a cosmetic gap); the four rows here carry contiguous sequences
 -- instead — the gap is not replicated.
-INSERT INTO maintenance.maintenance_stages (id, company_id, name, sequence, fold, done, metadata) VALUES
-    ('00000000-0000-0000-0000-00000000b001', NULL, 'New Request',  1, FALSE, FALSE, '{}'::jsonb),
-    ('00000000-0000-0000-0000-00000000b002', NULL, 'In Progress',  2, FALSE, FALSE, '{}'::jsonb),
-    ('00000000-0000-0000-0000-00000000b003', NULL, 'Repaired',     3, FALSE, TRUE,  '{}'::jsonb),
-    ('00000000-0000-0000-0000-00000000b004', NULL, 'Scrap',        4, FALSE, TRUE,  '{}'::jsonb)
+INSERT INTO maintenance.maintenance_stages (id, name, sequence, fold, done, metadata) VALUES
+    ('00000000-0000-0000-0000-00000000b001', 'New Request',  1, FALSE, FALSE, '{}'::jsonb),
+    ('00000000-0000-0000-0000-00000000b002', 'In Progress',  2, FALSE, FALSE, '{}'::jsonb),
+    ('00000000-0000-0000-0000-00000000b003', 'Repaired',     3, FALSE, TRUE,  '{}'::jsonb),
+    ('00000000-0000-0000-0000-00000000b004', 'Scrap',        4, FALSE, TRUE,  '{}'::jsonb)
 ON CONFLICT (id) DO NOTHING;

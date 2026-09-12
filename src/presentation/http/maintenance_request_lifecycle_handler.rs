@@ -10,9 +10,9 @@
 //! Mounted via [`crate::MaintenanceModule::lifecycle_routes`]; the production surface composes as
 //! `module.read_only_routes().merge(module.lifecycle_routes())` (reads + validated writes).
 //!
-//! NOTE: `create_request` reads `company_id` from the request body. A composing service that wires
-//! `company_auth` middleware should instead take it from the authenticated tenant and reject
-//! body-supplied values. Every later verb self-scopes from the request's own company.
+//! NOTE: tenancy rides the ambient org scope (ADR-0029) — the composing service binds the acting
+//! org unit per request and the write path scopes every verb through the caller-scoped helpers.
+//! No verb reads a tenant value from the request body.
 
 use std::sync::Arc;
 
@@ -86,12 +86,10 @@ impl IntoResponse for MaintenanceRequestApiError {
 // Request bodies
 // ---------------------------------------------------------------------------
 
-/// File a request. `company_id` is the owning tenant (see the module NOTE on auth). `stageId` is
-/// optional — omitted means the first visible stage.
+/// File a request. `stageId` is optional — omitted means the first visible stage.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateMaintenanceRequestBody {
-    pub company_id: Uuid,
     pub name: String,
     #[serde(default)]
     pub description: Option<String>,
@@ -194,7 +192,6 @@ pub async fn create_request(
     let id = st
         .write_svc
         .create_request(NewMaintenanceRequest {
-            company_id: req.company_id,
             name: req.name,
             description: req.description,
             schedule_date: req.schedule_date,

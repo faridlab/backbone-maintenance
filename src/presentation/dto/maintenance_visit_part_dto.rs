@@ -34,9 +34,6 @@ use crate::domain::entity::AuditMetadata;
 #[serde(rename_all = "camelCase")]
 pub struct CreateMaintenanceVisitPartDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(alias = "visit_id")]
     pub visit_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
@@ -62,9 +59,6 @@ pub struct CreateMaintenanceVisitPartDto {
 #[serde(rename_all = "camelCase")]
 pub struct UpdateMaintenanceVisitPartDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(alias = "visit_id")]
     pub visit_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
@@ -87,9 +81,6 @@ pub struct UpdateMaintenanceVisitPartDto {
 #[serde(rename_all = "camelCase")]
 pub struct PatchMaintenanceVisitPartDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(skip_serializing_if = "Option::is_none", alias = "company_id")]
-    pub company_id: Option<Uuid>,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "visit_id")]
     pub visit_id: Option<Uuid>,
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
@@ -102,7 +93,7 @@ pub struct PatchMaintenanceVisitPartDto {
 impl PatchMaintenanceVisitPartDto {
     /// Check if any field is set
     pub fn has_changes(&self) -> bool {
-        self.company_id.is_some() || self.visit_id.is_some() || self.item_id.is_some() || self.quantity.is_some()
+        self.visit_id.is_some() || self.item_id.is_some() || self.quantity.is_some()
     }
 }
 
@@ -120,8 +111,6 @@ impl PatchMaintenanceVisitPartDto {
 pub struct MaintenanceVisitPartResponseDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     pub id: Uuid,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     pub visit_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
@@ -186,9 +175,9 @@ impl MaintenanceVisitPartListResponseDto {
 #[serde(rename_all = "camelCase")]
 pub struct MaintenanceVisitPartSummaryDto {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub visit_id: Uuid,
     pub item_id: Uuid,
+    pub quantity: Decimal,
     pub created_at: Option<DateTime<Utc>>,
 }
 
@@ -200,7 +189,6 @@ impl From<MaintenanceVisitPart> for MaintenanceVisitPartResponseDto {
     fn from(entity: MaintenanceVisitPart) -> Self {
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             visit_id: entity.visit_id,
             item_id: entity.item_id,
             quantity: entity.quantity,
@@ -216,9 +204,9 @@ impl From<MaintenanceVisitPart> for MaintenanceVisitPartSummaryDto {
         let created_at = backbone_core::PersistentEntity::created_at(&entity);
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             visit_id: entity.visit_id,
             item_id: entity.item_id,
+            quantity: entity.quantity,
             created_at,
         }
     }
@@ -228,7 +216,6 @@ impl From<CreateMaintenanceVisitPartDto> for MaintenanceVisitPart {
     fn from(dto: CreateMaintenanceVisitPartDto) -> Self {
         Self {
             id: Uuid::new_v4(),
-            company_id: dto.company_id,
             visit_id: dto.visit_id,
             item_id: dto.item_id,
             quantity: dto.quantity,
@@ -243,7 +230,6 @@ impl From<&MaintenanceVisitPart> for MaintenanceVisitPartResponseDto {
     fn from(entity: &MaintenanceVisitPart) -> Self {
         Self {
             id: entity.id.clone(),
-            company_id: entity.company_id.clone(),
             visit_id: entity.visit_id.clone(),
             item_id: entity.item_id.clone(),
             quantity: entity.quantity.clone(),
@@ -262,7 +248,6 @@ impl backbone_core::FromCreateDto<CreateMaintenanceVisitPartDto> for Maintenance
 
 impl backbone_core::ApplyUpdateDto<UpdateMaintenanceVisitPartDto> for MaintenanceVisitPart {
     fn apply_update(mut self, dto: UpdateMaintenanceVisitPartDto) -> backbone_core::ServiceResult<Self> {
-        self.company_id = dto.company_id;
         self.visit_id = dto.visit_id;
         self.item_id = dto.item_id;
         self.quantity = dto.quantity;

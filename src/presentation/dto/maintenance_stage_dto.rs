@@ -32,8 +32,6 @@ use crate::domain::entity::AuditMetadata;
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct CreateMaintenanceStageDto {
-    #[serde(default, skip_serializing_if = "Option::is_none", alias = "company_id")]
-    pub company_id: Option<Uuid>,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
     #[cfg_attr(feature = "openapi", schema(example = 42))]
@@ -57,8 +55,6 @@ pub struct CreateMaintenanceStageDto {
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateMaintenanceStageDto {
-    #[serde(default, skip_serializing_if = "Option::is_none", alias = "company_id")]
-    pub company_id: Option<Uuid>,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
     #[cfg_attr(feature = "openapi", schema(example = 42))]
@@ -82,8 +78,6 @@ pub struct UpdateMaintenanceStageDto {
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct PatchMaintenanceStageDto {
-    #[serde(skip_serializing_if = "Option::is_none", alias = "company_id")]
-    pub company_id: Option<Uuid>,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -101,7 +95,7 @@ pub struct PatchMaintenanceStageDto {
 impl PatchMaintenanceStageDto {
     /// Check if any field is set
     pub fn has_changes(&self) -> bool {
-        self.company_id.is_some() || self.name.is_some() || self.sequence.is_some() || self.fold.is_some() || self.done.is_some()
+        self.name.is_some() || self.sequence.is_some() || self.fold.is_some() || self.done.is_some()
     }
 }
 
@@ -119,7 +113,6 @@ impl PatchMaintenanceStageDto {
 pub struct MaintenanceStageResponseDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     pub id: Uuid,
-    pub company_id: Option<Uuid>,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
     #[cfg_attr(feature = "openapi", schema(example = 42))]
@@ -185,9 +178,9 @@ impl MaintenanceStageListResponseDto {
 #[serde(rename_all = "camelCase")]
 pub struct MaintenanceStageSummaryDto {
     pub id: Uuid,
-    pub company_id: Option<Uuid>,
     pub name: String,
     pub sequence: i32,
+    pub fold: bool,
     pub created_at: Option<DateTime<Utc>>,
 }
 
@@ -199,7 +192,6 @@ impl From<MaintenanceStage> for MaintenanceStageResponseDto {
     fn from(entity: MaintenanceStage) -> Self {
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             name: entity.name,
             sequence: entity.sequence,
             fold: entity.fold,
@@ -214,9 +206,9 @@ impl From<MaintenanceStage> for MaintenanceStageSummaryDto {
         let created_at = backbone_core::PersistentEntity::created_at(&entity);
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             name: entity.name,
             sequence: entity.sequence,
+            fold: entity.fold,
             created_at,
         }
     }
@@ -226,7 +218,6 @@ impl From<CreateMaintenanceStageDto> for MaintenanceStage {
     fn from(dto: CreateMaintenanceStageDto) -> Self {
         Self {
             id: Uuid::new_v4(),
-            company_id: dto.company_id,
             name: dto.name,
             sequence: dto.sequence,
             fold: dto.fold,
@@ -240,7 +231,6 @@ impl From<&MaintenanceStage> for MaintenanceStageResponseDto {
     fn from(entity: &MaintenanceStage) -> Self {
         Self {
             id: entity.id.clone(),
-            company_id: entity.company_id.clone(),
             name: entity.name.clone(),
             sequence: entity.sequence.clone(),
             fold: entity.fold.clone(),
@@ -258,7 +248,6 @@ impl backbone_core::FromCreateDto<CreateMaintenanceStageDto> for MaintenanceStag
 
 impl backbone_core::ApplyUpdateDto<UpdateMaintenanceStageDto> for MaintenanceStage {
     fn apply_update(mut self, dto: UpdateMaintenanceStageDto) -> backbone_core::ServiceResult<Self> {
-        self.company_id = dto.company_id;
         self.name = dto.name;
         self.sequence = dto.sequence;
         self.fold = dto.fold;

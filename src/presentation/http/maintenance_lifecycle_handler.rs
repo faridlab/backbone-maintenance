@@ -11,10 +11,9 @@
 //! `module.read_only_routes().merge(module.lifecycle_routes())` (reads + validated writes). Do NOT
 //! merge with [`crate::MaintenanceModule::all_crud_routes`] — both mount `POST /maintenance_visits`.
 //!
-//! NOTE: `plan_visit` reads `company_id` from the request body. A composing service that wires
-//! `company_auth` middleware should instead take it from the authenticated tenant and reject
-//! body-supplied values. Every later verb self-scopes from the visit's own company, so only
-//! `plan_visit` needs it.
+//! NOTE: tenancy rides the ambient org scope (ADR-0029) — the composing service binds the acting
+//! org unit per request and the write path scopes every verb through the caller-scoped helpers.
+//! No verb reads a tenant value from the request body.
 
 use std::sync::Arc;
 
@@ -78,11 +77,10 @@ impl IntoResponse for MaintenanceApiError {
 // Request bodies
 // ---------------------------------------------------------------------------
 
-/// Plan a new visit. `company_id` is the owning tenant (see the module NOTE on auth).
+/// Plan a new visit.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PlanVisitRequest {
-    pub company_id: Uuid,
     pub asset_id: Uuid,
     #[serde(default)]
     pub schedule_id: Option<Uuid>,
@@ -125,7 +123,6 @@ pub async fn plan_visit(
     let id = st
         .write_svc
         .plan_visit(NewVisit {
-            company_id: req.company_id,
             asset_id: req.asset_id,
             schedule_id: req.schedule_id,
             maintenance_type: req.maintenance_type,

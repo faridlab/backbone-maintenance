@@ -68,6 +68,11 @@ user_owned:
   - "migrations/20260829150001_create_maintenance_request_table.down.sql"
   - "migrations/20260829150002_create_maintenance_stage_table.up.sql"
   - "migrations/20260829150002_create_maintenance_stage_table.down.sql"
+  # The ADR-0029 tenancy strip: drops the company_isolation policies, the
+  # company-leading indexes and the company_id columns under the ordering
+  # guard (decorator-first); the composing service's tenancy decorator
+  # re-declares the fence.
+  - "migrations/*strip_tenancy*"
   # Hand-authored behavior (services + their HTTP surface). Examples:
   # - "src/application/service/onboarding_service.rs"
   # - "src/presentation/http/guarded_routes.rs"

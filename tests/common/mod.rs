@@ -30,16 +30,16 @@ pub fn today() -> chrono::NaiveDate {
     chrono::Utc::now().date_naive()
 }
 
-pub async fn account(pool: &PgPool, company: Uuid, code: &str, atype: &str, subtype: &str, normal: &str) -> Uuid {
+pub async fn account(pool: &PgPool, code: &str, atype: &str, subtype: &str, normal: &str) -> Uuid {
     let id = Uuid::new_v4();
     sqlx::query(
         r#"INSERT INTO accounting.accounts
-             (id, company_id, account_number, account_code, name, account_type, account_subtype,
+             (id, account_number, account_code, name, account_type, account_subtype,
               normal_balance, is_header, is_detail, status)
-           VALUES ($1,$2,$3,$4,$5,$6::account_type,$7::account_subtype,$8::normal_balance,
+           VALUES ($1,$2,$3,$4,$5::account_type,$6::account_subtype,$7::normal_balance,
                    false,true,'active'::account_status)"#,
     )
-    .bind(id).bind(company).bind(code).bind(code).bind(code).bind(atype).bind(subtype).bind(normal)
+    .bind(id).bind(code).bind(code).bind(code).bind(atype).bind(subtype).bind(normal)
     .execute(pool).await.expect("seed account");
     id
 }
@@ -55,11 +55,11 @@ pub struct MxAccounts {
     pub parts_inventory: Uuid,
     pub labor_payable: Uuid,
 }
-pub async fn mx_accounts(pool: &PgPool, company: Uuid) -> MxAccounts {
+pub async fn mx_accounts(pool: &PgPool) -> MxAccounts {
     MxAccounts {
-        expense: account(pool, company, "6200-MNT", "expense", "operating_expense", "debit").await,
-        parts_inventory: account(pool, company, "1400-INV", "asset", "inventory", "debit").await,
-        labor_payable: account(pool, company, "2200-LAB", "liability", "current_liability", "credit").await,
+        expense: account(pool, "6200-MNT", "expense", "operating_expense", "debit").await,
+        parts_inventory: account(pool, "1400-INV", "asset", "inventory", "debit").await,
+        labor_payable: account(pool, "2200-LAB", "liability", "current_liability", "credit").await,
     }
 }
 

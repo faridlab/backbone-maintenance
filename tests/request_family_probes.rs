@@ -23,8 +23,9 @@
 //! 10  G-MT3 both layers: repeat_interval 0 rejected by the service guard and by the CHECK;
 //! 11  stage FK RESTRICT on hard delete + maintenance_stage_in_use on soft delete of a stage
 //!     still referenced by a live request;
-//! 12  fences as the NOBYPASSRLS app role: two companies isolated on requests, shared stages
-//!     visible to both, a forged cross-company insert rejected by WITH CHECK;
+//! 12  tenancy posture as the NOBYPASSRLS app role: fences ENABLEd + FORCEd, zero module
+//!     policies, company columns gone, default-denied regardless of the legacy company
+//!     variable, owner still sees the seed (ADR-0029);
 //! 13  the visit engine still completes + posts beside the request family (coexistence); the
 //!     pre-existing golden/GL suites are additionally run unchanged in CI.
 
@@ -93,9 +94,8 @@ async fn ensure_stages(pool: &PgPool) {
 }
 
 /// A preventive, recurring request starting at the given occurrence date.
-fn preventive(company: Uuid, schedule_date: chrono::DateTime<Utc>) -> NewMaintenanceRequest {
+fn preventive(_company: Uuid, schedule_date: chrono::DateTime<Utc>) -> NewMaintenanceRequest {
     NewMaintenanceRequest {
-        company_id: company,
         name: "pump inspection".into(),
         description: None,
         schedule_date: Some(schedule_date),
@@ -371,11 +371,10 @@ async fn p5_until_termination_and_both_layer_rejection() {
 
     let raw = sqlx::query(
         r#"INSERT INTO maintenance.maintenance_requests
-             (id, company_id, name, stage_id, maintenance_type, recurring, repeat_type, repeat_until)
-           VALUES ($1, $2, 'raw until probe', $3, 'preventive', true, 'until', NULL)"#,
+             (id, name, stage_id, maintenance_type, recurring, repeat_type, repeat_until)
+           VALUES ($1, 'raw until probe', $2, 'preventive', true, 'until', NULL)"#,
     )
     .bind(Uuid::new_v4())
-    .bind(company)
     .bind(stage_new())
     .execute(&pool)
     .await;
@@ -563,16 +562,15 @@ async fn p11_stage_delete_protections() {
     ensure_stages(&pool).await;
     let company = Uuid::new_v4();
 
-    // A company-private stage holding one live request.
+    // A probe-owned stage holding one live request (root-anchored under the composed shape).
     let used = Uuid::new_v4();
     let unused = Uuid::new_v4();
     for (id, name) in [(used, "probe used stage"), (unused, "probe unused stage")] {
         sqlx::query(
-            r#"INSERT INTO maintenance.maintenance_stages (id, company_id, name, sequence, done)
-               VALUES ($1, $2, $3, 90, FALSE)"#,
+            r#"INSERT INTO maintenance.maintenance_stages (id, name, sequence, done)
+               VALUES ($1, $2, 90, FALSE)"#,
         )
         .bind(id)
-        .bind(company)
         .bind(name)
         .execute(&pool)
         .await
@@ -632,11 +630,9 @@ async fn p11_stage_delete_protections() {
 // ── 12 — the fence, as a non-owner NOBYPASSRLS role ──────────────────────────
 
 #[tokio::test]
-async fn p12_company_fence_and_shared_stages() {
+async fn p12_tenancy_posture_flags_without_policies() {
     let pool = pool().await;
     ensure_stages(&pool).await;
-    let co_a = Uuid::new_v4();
-    let co_b = Uuid::new_v4();
 
     // Sanity: both fences are ENABLEd and FORCEd (the owner is fenced too).
     let row = sqlx::query(
@@ -654,76 +650,66 @@ async fn p12_company_fence_and_shared_stages() {
     .expect("pg_class");
     assert_eq!((row.get::<bool, _>(0), row.get::<bool, _>(1)), (true, true), "RLS enabled + forced on stages");
 
-    // A non-owner session: the role cannot bypass RLS, so the policies are the only view.
-    let mut app = PgConnection::connect(&app_dsn()).await.expect("app-role connect");
-    async fn set_scope(conn: &mut PgConnection, company: Uuid) {
-        sqlx::query("SELECT set_config('app.company_id', $1, false)")
-            .bind(company.to_string())
-            .execute(conn)
-            .await
-            .expect("set scope");
-    }
-
-    // Company A files a request through the fence.
-    set_scope(&mut app, co_a).await;
-    let req_a = Uuid::new_v4();
-    sqlx::query(
-        r#"INSERT INTO maintenance.maintenance_requests
-             (id, company_id, name, stage_id, maintenance_type, recurring)
-           VALUES ($1, $2, 'company A request', $3, 'corrective', false)"#,
+    // The module ships NO tenancy policy: under ADR-0029 isolation belongs to the composing
+    // service's decorator, never to the module.
+    let policies: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM pg_policies WHERE schemaname = 'maintenance'",
     )
-    .bind(req_a)
-    .bind(co_a)
-    .bind(stage_new())
-    .execute(&mut app)
+    .fetch_one(&pool)
     .await
-    .expect("scoped insert passes WITH CHECK");
+    .expect("pg_policies");
+    assert_eq!(policies, 0, "the module declares no tenancy policy");
 
-    // A sees its own request AND the shared stage set.
-    let seen: i64 = sqlx::query_scalar("SELECT count(*) FROM maintenance.maintenance_requests WHERE id = $1")
-        .bind(req_a)
-        .fetch_one(&mut app)
+    // The company columns are gone from every maintenance BUSINESS table. The one
+    // survivor is outbox_events: its company column is the shared outbox crate's
+    // wire contract (the staged record carries it; the module binds the legacy
+    // echo, nil undecorated) — plumbing, not a fence, and never keyed on by any
+    // module statement.
+    let company_cols: i64 = sqlx::query_scalar(
+        r#"SELECT count(*) FROM information_schema.columns
+            WHERE table_schema = 'maintenance' AND column_name = 'company_id'
+              AND table_name <> 'outbox_events'"#,
+    )
+    .fetch_one(&pool)
+    .await
+    .expect("information_schema");
+    assert_eq!(company_cols, 0, "no company_id column survives the strip");
+
+    // A non-owner NOBYPASSRLS session: with no policy there is nothing to admit it, so it is
+    // default-denied regardless of any legacy company variable — while the owner still sees the
+    // seeded stages (the denial is the fence, not an empty database).
+    let mut app = PgConnection::connect(&app_dsn()).await.expect("app-role connect");
+    sqlx::query("SELECT set_config('app.company_id', $1, false)")
+        .bind(Uuid::new_v4().to_string())
+        .execute(&mut app)
         .await
-        .expect("count as A");
-    assert_eq!(seen, 1, "own rows visible");
+        .expect("set legacy variable");
     let stages: i64 = sqlx::query_scalar("SELECT count(*) FROM maintenance.maintenance_stages")
         .fetch_one(&mut app)
         .await
-        .expect("stage count as A");
-    assert!(stages >= 4, "the shared NULL-company stages are visible (got {stages})");
-
-    // Company B sees none of A's requests, but the same shared stages.
-    set_scope(&mut app, co_b).await;
-    let seen: i64 = sqlx::query_scalar("SELECT count(*) FROM maintenance.maintenance_requests WHERE id = $1")
-        .bind(req_a)
-        .fetch_one(&mut app)
+        .expect("stage count as the app role");
+    assert_eq!(stages, 0, "no policy admits the app role, even with the legacy variable set");
+    let owner_stages: i64 = sqlx::query_scalar("SELECT count(*) FROM maintenance.maintenance_stages")
+        .fetch_one(&pool)
         .await
-        .expect("count as B");
-    assert_eq!(seen, 0, "cross-company request invisible");
-    let stages_b: i64 = sqlx::query_scalar("SELECT count(*) FROM maintenance.maintenance_stages")
-        .fetch_one(&mut app)
-        .await
-        .expect("stage count as B");
-    assert_eq!(stages_b, stages, "both companies see the same shared stages");
-
-    // A forged cross-company write is refused by WITH CHECK.
-    let forged = sqlx::query(
+        .expect("stage count as owner");
+    assert!(owner_stages >= 4, "the owner sees the seeded stages (got {owner_stages})");
+    let insert = sqlx::query(
         r#"INSERT INTO maintenance.maintenance_requests
-             (id, company_id, name, stage_id, maintenance_type, recurring)
-           VALUES ($1, $2, 'forged row', $3, 'corrective', false)"#,
+             (id, name, stage_id, maintenance_type, recurring)
+           VALUES ($1, 'posture probe', $2, 'corrective', false)"#,
     )
     .bind(Uuid::new_v4())
-    .bind(co_a) // row claims A…
     .bind(stage_new())
-    .execute(&mut app) // …while scoped as B
+    .execute(&mut app)
     .await;
-    match forged {
+    match insert {
         Err(e) => assert!(
             err_text(&e).contains("row-level security") || err_text(&e).contains("policy"),
             "wrong error: {}",
             err_text(&e)
         ),
-        Ok(_) => panic!("a B-scoped session must not insert an A-owned row"),
+        Ok(_) => panic!("a default-denied role must not insert"),
     }
 }
 
@@ -734,7 +720,7 @@ async fn p13_visit_engine_still_completes_beside_the_request_family() {
     let pool = pool().await;
     ensure_stages(&pool).await;
     let company = Uuid::new_v4();
-    let accounts = common::mx_accounts(&pool, company).await;
+    let accounts = common::mx_accounts(&pool).await;
 
     // One request-family row in place while the visit engine runs — both engines, one DB.
     let req = svc(&pool)
@@ -747,7 +733,6 @@ async fn p13_visit_engine_still_completes_beside_the_request_family() {
     let gl = CountingGl::new();
     let visit = write
         .plan_visit(NewVisit {
-            company_id: company,
             asset_id: Uuid::new_v4(),
             schedule_id: None,
             maintenance_type: "corrective".into(),

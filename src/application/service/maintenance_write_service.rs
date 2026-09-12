@@ -5,8 +5,13 @@
 //! roll parts + labor into the visit cost, and post ONE balanced maintenance-cost journal — the **9th GL
 //! producer**: `Dr Maintenance Expense (total) · Cr Inventory Parts (parts) · Cr Labor Payable (labor)`.
 //! Because `total = parts + labor`, it balances. Idempotent per visit. Money is IDR, 2dp, half-away.
+//!
+//! Tenancy (ADR-0029): the module is tenant-agnostic. Writes bind the ambient org scope (set per
+//! request by the composing service) — never a module-side tenant value; pool reads ride the
+//! caller-scoped helpers. Cross-module payload fields that still carry a company id are legacy twins,
+//! filled from the ambient scope's company echo, never keyed on by a statement here.
 
-use backbone_orm::company_scope;
+use backbone_orm::org_scope;
 use chrono::{NaiveDate, Utc};
 use rust_decimal::{Decimal, RoundingStrategy};
 use sqlx::PgPool;
@@ -20,6 +25,28 @@ use crate::infrastructure::persistence::{
 use super::maintenance_events::*;
 use super::maintenance_gl::*;
 use super::maintenance_ports::*;
+
+/// The ambient org scope's legacy company echo — the acting org unit, which the spine mirrored
+/// from the historical company id verbatim. Cross-module wire fields that still carry a tenant
+/// (the GL envelope, the inventory issue, the outbox fence, the event payloads) are filled from
+/// it; nothing in this module keys a statement on it. `Uuid::nil()` when no scope is bound
+/// (undecorated module tests, jobs).
+pub(crate) fn legacy_company_echo() -> Uuid {
+    org_scope::current_org_scope()
+        .and_then(|s| s.legacy_company_id())
+        .unwrap_or(Uuid::nil())
+}
+
+/// Re-bind the caller's ambient org scope onto a transaction this service opened itself — the
+/// scope is task-local and a fresh pool transaction carries none of it. With no ambient scope
+/// (standalone deployment, jobs) the transaction stays plain: the module is tenant-agnostic and
+/// the composed decorator owns isolation.
+pub(crate) async fn relay_ambient_scope(conn: &mut sqlx::PgConnection) -> Result<(), sqlx::Error> {
+    if let Some(scope) = org_scope::current_org_scope() {
+        org_scope::bind_org_scope_on(conn, &scope).await?;
+    }
+    Ok(())
+}
 
 fn money(v: Decimal) -> Decimal {
     v.round_dp_with_strategy(2, RoundingStrategy::MidpointAwayFromZero)
@@ -44,7 +71,6 @@ pub enum MaintenanceError {
 }
 
 pub struct NewSchedule {
-    pub company_id: Uuid,
     pub asset_id: Uuid,
     pub name: String,
     pub interval_days: i32,
@@ -52,7 +78,6 @@ pub struct NewSchedule {
 }
 
 pub struct NewVisit {
-    pub company_id: Uuid,
     pub asset_id: Uuid,
     pub schedule_id: Option<Uuid>,
     pub maintenance_type: String, // preventive | corrective
@@ -94,17 +119,13 @@ impl MaintenanceWriteService {
             return Err(MaintenanceError::Invalid("interval_days must be positive".into()));
         }
         let id = Uuid::new_v4();
-        company_scope::with_company_scope(
-            Some(s.company_id),
-            self.schedules.insert_schedule(&self.pool, &NewScheduleRow {
-                id,
-                company_id: s.company_id,
-                asset_id: s.asset_id,
-                name: &s.name,
-                interval_days: s.interval_days,
-                next_due_date: s.next_due_date,
-            }),
-        ).await?;
+        self.schedules.insert_schedule(&self.pool, &NewScheduleRow {
+            id,
+            asset_id: s.asset_id,
+            name: &s.name,
+            interval_days: s.interval_days,
+            next_due_date: s.next_due_date,
+        }).await?;
         Ok(id)
     }
 
@@ -114,23 +135,19 @@ impl MaintenanceWriteService {
             return Err(MaintenanceError::Invalid("labor_cost must be non-negative".into()));
         }
         let id = Uuid::new_v4();
-        company_scope::with_company_scope(
-            Some(v.company_id),
-            self.visits.insert_visit(&self.pool, &NewVisitRow {
-                id,
-                company_id: v.company_id,
-                asset_id: v.asset_id,
-                schedule_id: v.schedule_id,
-                maintenance_type: &v.maintenance_type,
-                warehouse_id: v.warehouse_id,
-                warranty_claim_id: v.warranty_claim_id,
-                scheduled_date: v.scheduled_date,
-                labor_cost: money(v.labor_cost),
-                maintenance_expense_account_id: v.maintenance_expense_account_id,
-                parts_inventory_account_id: v.parts_inventory_account_id,
-                labor_payable_account_id: v.labor_payable_account_id,
-            }),
-        ).await?;
+        self.visits.insert_visit(&self.pool, &NewVisitRow {
+            id,
+            asset_id: v.asset_id,
+            schedule_id: v.schedule_id,
+            maintenance_type: &v.maintenance_type,
+            warehouse_id: v.warehouse_id,
+            warranty_claim_id: v.warranty_claim_id,
+            scheduled_date: v.scheduled_date,
+            labor_cost: money(v.labor_cost),
+            maintenance_expense_account_id: v.maintenance_expense_account_id,
+            parts_inventory_account_id: v.parts_inventory_account_id,
+            labor_payable_account_id: v.labor_payable_account_id,
+        }).await?;
         Ok(id)
     }
 
@@ -149,14 +166,12 @@ impl MaintenanceWriteService {
             "planned" => {}
             _ => return Err(MaintenanceError::InvalidState("visit is not planned — the part set is frozen")),
         }
-        // The part line inherits the visit's company (maintenance_visit_parts is fenced — ADR-0010
-        // Decision A). Bind that company on the INSERT and on the scope so the RLS WITH CHECK passes.
+        // The line belongs to its visit; under the composed shape the decorator's fill stamps the
+        // acting unit on the INSERT (the fence intent ADR-0010 defined, carried by ADR-0029's
+        // decorator). The visit-status check above already fences the line to a visit the caller
+        // may see.
         let id = Uuid::new_v4();
-        let company_id = v.company_id;
-        company_scope::with_company_scope(
-            Some(company_id),
-            self.parts.insert_part(&self.pool, id, company_id, visit_id, item_id, quantity),
-        ).await?;
+        self.parts.insert_part(&self.pool, id, visit_id, item_id, quantity).await?;
         Ok(id)
     }
 
@@ -182,7 +197,6 @@ impl MaintenanceWriteService {
     ) -> Result<CompleteOutcome, MaintenanceError> {
         let v = self.visits.fetch_for_completion(&self.pool, visit_id).await?
             .ok_or(MaintenanceError::NotFound("visit"))?;
-        let company_id = v.company_id;
         if v.status == "completed" {
             return Ok(CompleteOutcome {
                 visit_id, journal_id: v.journal_id, total_cost: v.total_cost, already: true,
@@ -191,13 +205,14 @@ impl MaintenanceWriteService {
         if v.status != "planned" && v.status != "in_progress" {
             return Err(MaintenanceError::InvalidState("visit is not open"));
         }
+        // The legacy company echo for the cross-module payloads (the inventory issue, the GL
+        // envelope, the outbox fence, the event payloads) — the ambient scope's own echo, never a
+        // module-side tenant value.
+        let legacy_company = legacy_company_echo();
         // FREEZE the part set before any external effect: claim the visit to in_progress. `add_part` only
         // accepts a planned visit, so once claimed no line can be added — a crash-and-retry re-issues the
         // identical frozen set (maturity council 2026-07-10).
-        company_scope::with_company_scope(
-            Some(company_id),
-            self.visits.claim_in_progress(&self.pool, visit_id),
-        ).await?;
+        self.visits.claim_in_progress(&self.pool, visit_id).await?;
 
         let asset_id = v.asset_id;
         let labor_cost = v.labor_cost;
@@ -205,10 +220,7 @@ impl MaintenanceWriteService {
         let maintenance_type = v.maintenance_type.clone();
 
         // Issue the parts out of inventory (valued at moving-average). Idempotent per visit.
-        let part_rows = company_scope::with_company_scope(
-            Some(company_id),
-            self.parts.list_for_visit(&self.pool, visit_id),
-        ).await?;
+        let part_rows = self.parts.list_for_visit(&self.pool, visit_id).await?;
         let mut parts_cost = Decimal::ZERO;
         if !part_rows.is_empty() {
             let warehouse_id: Uuid = v.warehouse_id
@@ -217,16 +229,13 @@ impl MaintenanceWriteService {
                 item_id: r.item_id, quantity: r.quantity,
             }).collect();
             let ack = inventory.issue_parts(&PartsIssue {
-                company_id, visit_id, warehouse_id, idempotency_key: format!("maintenance:{visit_id}"), lines,
+                company_id: legacy_company, visit_id, warehouse_id, idempotency_key: format!("maintenance:{visit_id}"), lines,
             }).await.map_err(|e| MaintenanceError::InventoryRejected(e.code))?;
             parts_cost = money(ack.total_value);
             // Write back the valued unit_cost/amount per line.
             for lv in &ack.lines {
-                company_scope::with_company_scope(
-                    Some(company_id),
-                    self.parts.set_valuation(
-                        &self.pool, visit_id, lv.item_id, money(lv.rate), money(lv.value),
-                    ),
+                self.parts.set_valuation(
+                    &self.pool, visit_id, lv.item_id, money(lv.rate), money(lv.value),
                 ).await?;
             }
         }
@@ -251,7 +260,7 @@ impl MaintenanceWriteService {
             }
             let env = AccountingPostEnvelope {
                 idempotency_key: format!("maintenance:{visit_id}"),
-                company_id, branch_id: None, source_type: "maintenance".into(), source_id: visit_id,
+                company_id: legacy_company, branch_id: None, source_type: "maintenance".into(), source_id: visit_id,
                 source_reference: None, posting_date: performed_date, currency: "IDR".into(),
                 posting_type: "original".into(), description: Some("Maintenance cost".into()), lines,
             };
@@ -264,18 +273,16 @@ impl MaintenanceWriteService {
         }
 
         let mut tx = self.pool.begin().await?;
-        // The visit's own company — the completion tx writes visits/schedules/outbox behind the RLS fence.
-        company_scope::bind_company_on(&mut tx, company_id).await?;
+        // The ambient org scope — the completion tx writes visits/schedules/outbox behind the
+        // composed decorator's fence (ADR-0029). Undecorated, the tx stays plain.
+        relay_ambient_scope(&mut tx).await?;
         let moved = self.visits.complete(&mut tx, visit_id, &VisitCompletion {
             performed_date, parts_cost, total_cost, journal_id, accounting_post_id: post_id,
         }).await?;
         if moved != 1 {
             tx.rollback().await?;
             // Raced — re-read the winner.
-            let j = company_scope::with_company_scope(
-                Some(company_id),
-                self.visits.fetch_journal_id(&self.pool, visit_id),
-            ).await?;
+            let j = self.visits.fetch_journal_id(&self.pool, visit_id).await?;
             return Ok(CompleteOutcome { visit_id, journal_id: j, total_cost, already: true });
         }
 
@@ -289,10 +296,10 @@ impl MaintenanceWriteService {
         }
 
         let event = MaintenanceEvent::MaintenanceCompleted(MaintenanceCompleted {
-            visit_id, company_id, asset_id, journal_id, labor_cost, parts_cost, total_cost,
+            visit_id, company_id: legacy_company, asset_id, journal_id, labor_cost, parts_cost, total_cost,
         });
         let record = backbone_outbox::OutboxRecord::new(
-            "MaintenanceCompleted", "MaintenanceVisit", visit_id.to_string(), company_id,
+            "MaintenanceCompleted", "MaintenanceVisit", visit_id.to_string(), legacy_company,
             serde_json::to_value(&event).map_err(|e| MaintenanceError::Invalid(e.to_string()))?,
             Utc::now(),
         );

@@ -36,9 +36,6 @@ use crate::domain::entity::VisitStatus;
 #[serde(rename_all = "camelCase")]
 pub struct CreateMaintenanceVisitDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(alias = "asset_id")]
     pub asset_id: Uuid,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "schedule_id")]
@@ -89,9 +86,6 @@ pub struct CreateMaintenanceVisitDto {
 #[serde(rename_all = "camelCase")]
 pub struct UpdateMaintenanceVisitDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(alias = "asset_id")]
     pub asset_id: Uuid,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "schedule_id")]
@@ -133,9 +127,6 @@ pub struct UpdateMaintenanceVisitDto {
 #[serde(rename_all = "camelCase")]
 pub struct PatchMaintenanceVisitDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(skip_serializing_if = "Option::is_none", alias = "company_id")]
-    pub company_id: Option<Uuid>,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "asset_id")]
     pub asset_id: Option<Uuid>,
     #[serde(skip_serializing_if = "Option::is_none", alias = "schedule_id")]
@@ -166,7 +157,7 @@ pub struct PatchMaintenanceVisitDto {
 impl PatchMaintenanceVisitDto {
     /// Check if any field is set
     pub fn has_changes(&self) -> bool {
-        self.company_id.is_some() || self.asset_id.is_some() || self.schedule_id.is_some() || self.maintenance_type.is_some() || self.warehouse_id.is_some() || self.warranty_claim_id.is_some() || self.scheduled_date.is_some() || self.performed_date.is_some() || self.labor_cost.is_some() || self.maintenance_expense_account_id.is_some() || self.parts_inventory_account_id.is_some() || self.labor_payable_account_id.is_some() || self.notes.is_some()
+        self.asset_id.is_some() || self.schedule_id.is_some() || self.maintenance_type.is_some() || self.warehouse_id.is_some() || self.warranty_claim_id.is_some() || self.scheduled_date.is_some() || self.performed_date.is_some() || self.labor_cost.is_some() || self.maintenance_expense_account_id.is_some() || self.parts_inventory_account_id.is_some() || self.labor_payable_account_id.is_some() || self.notes.is_some()
     }
 }
 
@@ -184,8 +175,6 @@ impl PatchMaintenanceVisitDto {
 pub struct MaintenanceVisitResponseDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     pub id: Uuid,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     pub asset_id: Uuid,
     pub schedule_id: Option<Uuid>,
@@ -262,9 +251,9 @@ impl MaintenanceVisitListResponseDto {
 #[serde(rename_all = "camelCase")]
 pub struct MaintenanceVisitSummaryDto {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub asset_id: Uuid,
     pub schedule_id: Option<Uuid>,
+    pub maintenance_type: MaintenanceType,
     pub created_at: Option<DateTime<Utc>>,
 }
 
@@ -276,7 +265,6 @@ impl From<MaintenanceVisit> for MaintenanceVisitResponseDto {
     fn from(entity: MaintenanceVisit) -> Self {
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             asset_id: entity.asset_id,
             schedule_id: entity.schedule_id,
             maintenance_type: entity.maintenance_type,
@@ -304,9 +292,9 @@ impl From<MaintenanceVisit> for MaintenanceVisitSummaryDto {
         let created_at = backbone_core::PersistentEntity::created_at(&entity);
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             asset_id: entity.asset_id,
             schedule_id: entity.schedule_id,
+            maintenance_type: entity.maintenance_type,
             created_at,
         }
     }
@@ -316,7 +304,6 @@ impl From<CreateMaintenanceVisitDto> for MaintenanceVisit {
     fn from(dto: CreateMaintenanceVisitDto) -> Self {
         Self {
             id: Uuid::new_v4(),
-            company_id: dto.company_id,
             asset_id: dto.asset_id,
             schedule_id: dto.schedule_id,
             maintenance_type: dto.maintenance_type,
@@ -343,7 +330,6 @@ impl From<&MaintenanceVisit> for MaintenanceVisitResponseDto {
     fn from(entity: &MaintenanceVisit) -> Self {
         Self {
             id: entity.id.clone(),
-            company_id: entity.company_id.clone(),
             asset_id: entity.asset_id.clone(),
             schedule_id: entity.schedule_id.clone(),
             maintenance_type: entity.maintenance_type.clone(),
@@ -374,7 +360,6 @@ impl backbone_core::FromCreateDto<CreateMaintenanceVisitDto> for MaintenanceVisi
 
 impl backbone_core::ApplyUpdateDto<UpdateMaintenanceVisitDto> for MaintenanceVisit {
     fn apply_update(mut self, dto: UpdateMaintenanceVisitDto) -> backbone_core::ServiceResult<Self> {
-        self.company_id = dto.company_id;
         self.asset_id = dto.asset_id;
         self.schedule_id = dto.schedule_id;
         self.maintenance_type = dto.maintenance_type;

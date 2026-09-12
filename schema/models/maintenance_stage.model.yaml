@@ -23,10 +23,6 @@ models:
         type: uuid
         attributes: ["@id", "@default(uuid)"]
         description: "Unique stage id"
-      company_id:
-        type: uuid?
-        attributes: ["@exclude_from_foreign_key_check"]
-        description: "Owning company; NULL = the shared stage set every company session sees # logical FK organization.Company.id"
       name:
         type: string
         attributes: ["@required", "@length(max=200)"]

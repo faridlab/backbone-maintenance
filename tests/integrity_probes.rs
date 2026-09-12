@@ -8,9 +8,9 @@ use backbone_maintenance::application::service::maintenance_events::LoggingSink;
 use backbone_maintenance::application::service::maintenance_write_service::*;
 use uuid::Uuid;
 
-fn visit_dto(company: Uuid, warehouse: Option<Uuid>, a: &MxAccounts) -> NewVisit {
+fn visit_dto(_company: Uuid, warehouse: Option<Uuid>, a: &MxAccounts) -> NewVisit {
     NewVisit {
-        company_id: company, asset_id: Uuid::new_v4(), schedule_id: None, maintenance_type: "corrective".into(),
+        asset_id: Uuid::new_v4(), schedule_id: None, maintenance_type: "corrective".into(),
         scheduled_date: today(), warehouse_id: warehouse, warranty_claim_id: None, labor_cost: dec("50000"),
         maintenance_expense_account_id: a.expense, parts_inventory_account_id: a.parts_inventory,
         labor_payable_account_id: a.labor_payable,
@@ -23,7 +23,7 @@ async fn mip1_interval_positive() {
     let pool = pool().await;
     let svc = MaintenanceWriteService::new(pool.clone());
     let r = svc.create_schedule(NewSchedule {
-        company_id: Uuid::new_v4(), asset_id: Uuid::new_v4(), name: "bad".into(),
+        asset_id: Uuid::new_v4(), name: "bad".into(),
         interval_days: 0, next_due_date: today(),
     }).await;
     assert!(matches!(r, Err(MaintenanceError::Invalid(_))));
@@ -35,7 +35,7 @@ async fn mip1_interval_positive() {
 async fn mip2_transition_gates() {
     let pool = pool().await;
     let company = Uuid::new_v4();
-    let a = mx_accounts(&pool, company).await;
+    let a = mx_accounts(&pool).await;
     let svc = MaintenanceWriteService::new(pool.clone());
 
     let cancelled = svc.plan_visit(visit_dto(company, None, &a)).await.unwrap();
@@ -49,7 +49,7 @@ async fn mip2_transition_gates() {
 async fn mip3_parts_only_when_open() {
     let pool = pool().await;
     let company = Uuid::new_v4();
-    let a = mx_accounts(&pool, company).await;
+    let a = mx_accounts(&pool).await;
     let svc = MaintenanceWriteService::new(pool.clone());
     let visit = svc.plan_visit(visit_dto(company, None, &a)).await.unwrap();
     svc.complete_visit(visit, today(), &FakeInventory::new("5000"), &CountingGl::new(), &LoggingSink).await.unwrap();
@@ -64,7 +64,7 @@ async fn mip4_parts_issued_once() {
     let pool = pool().await;
     let company = Uuid::new_v4();
     let warehouse = Uuid::new_v4();
-    let a = mx_accounts(&pool, company).await;
+    let a = mx_accounts(&pool).await;
     let svc = MaintenanceWriteService::new(pool.clone());
     let inv = FakeInventory::new("5000");
     let visit = svc.plan_visit(visit_dto(company, Some(warehouse), &a)).await.unwrap();
@@ -81,7 +81,7 @@ async fn mip4_parts_issued_once() {
 async fn mip5_completion_event_durable() {
     let pool = pool().await;
     let company = Uuid::new_v4();
-    let a = mx_accounts(&pool, company).await;
+    let a = mx_accounts(&pool).await;
     let svc = MaintenanceWriteService::new(pool.clone());
     let visit = svc.plan_visit(visit_dto(company, None, &a)).await.unwrap();
     svc.complete_visit(visit, today(), &FakeInventory::new("5000"), &CountingGl::new(), &DroppingSink).await.unwrap();
@@ -99,7 +99,7 @@ async fn mip5_completion_event_durable() {
 async fn mip6_part_set_frozen_after_start() {
     let pool = pool().await;
     let company = Uuid::new_v4();
-    let a = mx_accounts(&pool, company).await;
+    let a = mx_accounts(&pool).await;
     let svc = MaintenanceWriteService::new(pool.clone());
     let warehouse = Uuid::new_v4();
     let visit = svc.plan_visit(visit_dto(company, Some(warehouse), &a)).await.unwrap();

@@ -44,7 +44,6 @@ pub struct MaintenanceVisitPaginatedResult {
 /// Filter parameters for list queries
 #[derive(Debug, Clone, Default)]
 pub struct MaintenanceVisitFilter {
-    pub company_id: Option<Uuid>,
     pub asset_id: Option<Uuid>,
     pub schedule_id: Option<Uuid>,
     pub maintenance_type: Option<MaintenanceType>,
@@ -62,7 +61,7 @@ pub struct MaintenanceVisitFilter {
 impl MaintenanceVisitFilter {
     /// Check if any filter is set
     pub fn has_filters(&self) -> bool {
-        self.company_id.is_some() || self.asset_id.is_some() || self.schedule_id.is_some() || self.maintenance_type.is_some() || self.status.is_some() || self.warehouse_id.is_some() || self.warranty_claim_id.is_some() || self.maintenance_expense_account_id.is_some() || self.parts_inventory_account_id.is_some() || self.labor_payable_account_id.is_some() || self.journal_id.is_some() || self.accounting_post_id.is_some() || self.notes.is_some()
+        self.asset_id.is_some() || self.schedule_id.is_some() || self.maintenance_type.is_some() || self.status.is_some() || self.warehouse_id.is_some() || self.warranty_claim_id.is_some() || self.maintenance_expense_account_id.is_some() || self.parts_inventory_account_id.is_some() || self.labor_payable_account_id.is_some() || self.journal_id.is_some() || self.accounting_post_id.is_some() || self.notes.is_some()
     }
 }
 

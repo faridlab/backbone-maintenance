@@ -39,6 +39,8 @@ impl GlPostLine {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AccountingPostEnvelope {
     pub idempotency_key: String,
+    /// Legacy twin (ADR-0029): accounting's `PostingRequest` wire shape still carries the tenant;
+    /// filled from the ambient org scope's company echo. Nothing in this module keys on it.
     pub company_id: Uuid,
     pub branch_id: Option<Uuid>,
     /// Posting source discriminator — the emitting domain's stable key (this module posts

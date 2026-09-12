@@ -10,9 +10,9 @@ use backbone_maintenance::application::service::maintenance_write_service::*;
 use rust_decimal::Decimal;
 use uuid::Uuid;
 
-fn new_visit(company: Uuid, asset: Uuid, warehouse: Option<Uuid>, labor: &str, a: &MxAccounts) -> NewVisit {
+fn new_visit(_company: Uuid, asset: Uuid, warehouse: Option<Uuid>, labor: &str, a: &MxAccounts) -> NewVisit {
     NewVisit {
-        company_id: company, asset_id: asset, schedule_id: None, maintenance_type: "corrective".into(),
+        asset_id: asset, schedule_id: None, maintenance_type: "corrective".into(),
         scheduled_date: today(), warehouse_id: warehouse, warranty_claim_id: None, labor_cost: dec(labor),
         maintenance_expense_account_id: a.expense, parts_inventory_account_id: a.parts_inventory,
         labor_payable_account_id: a.labor_payable,
@@ -26,7 +26,7 @@ async fn mgc1_complete_posts_balanced_cost() {
     let company = Uuid::new_v4();
     let asset = Uuid::new_v4();
     let warehouse = Uuid::new_v4();
-    let a = mx_accounts(&pool, company).await;
+    let a = mx_accounts(&pool).await;
     let svc = MaintenanceWriteService::new(pool.clone());
     let inv = FakeInventory::new("5000"); // 5000/unit
 
@@ -53,7 +53,7 @@ async fn mgc1_complete_posts_balanced_cost() {
 async fn mgc2_complete_idempotent() {
     let pool = pool().await;
     let company = Uuid::new_v4();
-    let a = mx_accounts(&pool, company).await;
+    let a = mx_accounts(&pool).await;
     let svc = MaintenanceWriteService::new(pool.clone());
     let inv = FakeInventory::new("5000");
     let visit = svc.plan_visit(new_visit(company, Uuid::new_v4(), None, "100000", &a)).await.unwrap();
@@ -71,7 +71,7 @@ async fn mgc2_complete_idempotent() {
 async fn mgc3_zero_cost_visit_no_post() {
     let pool = pool().await;
     let company = Uuid::new_v4();
-    let a = mx_accounts(&pool, company).await;
+    let a = mx_accounts(&pool).await;
     let svc = MaintenanceWriteService::new(pool.clone());
     let visit = svc.plan_visit(new_visit(company, Uuid::new_v4(), None, "0", &a)).await.unwrap();
     let gl = CountingGl::new();
@@ -88,7 +88,7 @@ async fn mgc4_parts_valued_by_inventory() {
     let pool = pool().await;
     let company = Uuid::new_v4();
     let warehouse = Uuid::new_v4();
-    let a = mx_accounts(&pool, company).await;
+    let a = mx_accounts(&pool).await;
     let svc = MaintenanceWriteService::new(pool.clone());
     let inv = FakeInventory::new("2500");
     let sink = CapturingSink::new();
@@ -117,20 +117,20 @@ async fn mgc4_parts_valued_by_inventory() {
 async fn mgc5_preventive_completion_advances_schedule() {
     use chrono::NaiveDate;
     let pool = pool().await;
-    let company = Uuid::new_v4();
+    let _company = Uuid::new_v4();
     let asset = Uuid::new_v4();
-    let a = mx_accounts(&pool, company).await;
+    let a = mx_accounts(&pool).await;
     let svc = MaintenanceWriteService::new(pool.clone());
 
     let due = NaiveDate::from_ymd_opt(2026, 7, 1).unwrap();
     let schedule = svc.create_schedule(NewSchedule {
-        company_id: company, asset_id: asset, name: "90-day service".into(),
+        asset_id: asset, name: "90-day service".into(),
         interval_days: 90, next_due_date: due,
     }).await.unwrap();
 
     // A preventive visit fulfilling the schedule, completed on the due date.
     let visit = svc.plan_visit(NewVisit {
-        company_id: company, asset_id: asset, schedule_id: Some(schedule), maintenance_type: "preventive".into(),
+        asset_id: asset, schedule_id: Some(schedule), maintenance_type: "preventive".into(),
         scheduled_date: due, warehouse_id: None, warranty_claim_id: None, labor_cost: dec("100000"),
         maintenance_expense_account_id: a.expense, parts_inventory_account_id: a.parts_inventory,
         labor_payable_account_id: a.labor_payable,

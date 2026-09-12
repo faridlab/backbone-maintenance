@@ -7,6 +7,10 @@
 //! `SuccessorSpawned` (when the clone-on-done engine fired). Both are also staged to the module outbox —
 //! they are the named seam for the activity family's deferred lifecycle feedbacks (the communication
 //! module consumes maintenance.request stage_changed / successor_spawned through the host relay).
+//!
+//! Every payload's `company_id` is a legacy twin (ADR-0029): filled from the ambient org scope's
+//! company echo for consumers that still read a tenant off the wire. No module statement keys on
+//! it.
 
 use chrono::{DateTime, NaiveDate, Utc};
 use rust_decimal::Decimal;

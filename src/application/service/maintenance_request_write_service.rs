@@ -17,7 +17,6 @@
 //! trigger. Outbox events (`MaintenanceRequestStageChanged`, `SuccessorSpawned`) are the named seam
 //! for the deferred activity-family feedbacks, consumed through the host relay.
 
-use backbone_orm::company_scope;
 use chrono::{DateTime, Duration, NaiveDate, Utc};
 use rust_decimal::{Decimal, prelude::ToPrimitive};
 use sqlx::PgPool;
@@ -29,6 +28,7 @@ use crate::infrastructure::persistence::{
 };
 
 use super::maintenance_events::*;
+use super::maintenance_write_service::{legacy_company_echo, relay_ambient_scope};
 
 #[derive(Debug, thiserror::Error)]
 pub enum RequestWriteError {
@@ -57,7 +57,6 @@ pub enum RequestWriteError {
 /// A request as filed. The stage defaults to the first visible stage when `stage_id` is `None`.
 #[derive(Debug, Clone)]
 pub struct NewMaintenanceRequest {
-    pub company_id: Uuid,
     pub name: String,
     pub description: Option<String>,
     pub schedule_date: Option<DateTime<Utc>>,
@@ -80,7 +79,6 @@ pub struct NewMaintenanceRequest {
 impl Default for NewMaintenanceRequest {
     fn default() -> Self {
         Self {
-            company_id: Uuid::nil(),
             name: String::new(),
             description: None,
             schedule_date: None,
@@ -162,26 +160,15 @@ impl MaintenanceRequestWriteService {
         )?;
         let stage_id = match r.stage_id {
             Some(s) => {
-                let stage = company_scope::with_company_scope(
-                    Some(r.company_id),
-                    self.requests.fetch_stage(&self.pool, s),
-                )
-                .await?;
+                let stage = self.requests.fetch_stage(&self.pool, s).await?;
                 stage.ok_or(RequestWriteError::NotFound("stage"))?.id
             }
-            None => company_scope::with_company_scope(
-                Some(r.company_id),
-                self.requests.fetch_first_stage_id(&self.pool),
-            )
-            .await?
-            .ok_or(RequestWriteError::NotFound("stage"))?,
+            None => self.requests.fetch_first_stage_id(&self.pool).await?
+                .ok_or(RequestWriteError::NotFound("stage"))?,
         };
         let id = Uuid::new_v4();
-        company_scope::with_company_scope(
-            Some(r.company_id),
-            self.requests.insert_request(&self.pool, &NewRequestRow {
+        self.requests.insert_request(&self.pool, &NewRequestRow {
                 id,
-                company_id: r.company_id,
                 name: &r.name,
                 description: r.description.as_deref(),
                 schedule_date: r.schedule_date,
@@ -200,9 +187,8 @@ impl MaintenanceRequestWriteService {
                 repeat_type: &r.repeat_type.to_string(),
                 repeat_until: r.repeat_until,
                 successor_of_request_id: None,
-            }),
-        )
-        .await?;
+            })
+            .await?;
         Ok(id)
     }
 
@@ -262,9 +248,7 @@ impl MaintenanceRequestWriteService {
         let repeat_unit_str = u.repeat_unit.as_ref().map(|x| x.to_string());
         let repeat_type_str = u.repeat_type.as_ref().map(|x| x.to_string());
 
-        let moved = company_scope::with_company_scope(
-            Some(old.company_id),
-            self.requests.update_request_fields(&self.pool, request_id, &RequestFieldUpdates {
+        let moved = self.requests.update_request_fields(&self.pool, request_id, &RequestFieldUpdates {
                 name: u.name.as_deref(),
                 description: u.description.as_deref(),
                 schedule_date: u.schedule_date,
@@ -280,9 +264,8 @@ impl MaintenanceRequestWriteService {
                 repeat_unit: repeat_unit_str.as_deref(),
                 repeat_type: repeat_type_str.as_deref(),
                 repeat_until: u.repeat_until,
-            }),
-        )
-        .await?;
+            })
+            .await?;
         if moved != 1 {
             return Err(RequestWriteError::NotFound("request"));
         }
@@ -307,14 +290,9 @@ impl MaintenanceRequestWriteService {
             .fetch(&self.pool, request_id)
             .await?
             .ok_or(RequestWriteError::NotFound("request"))?;
-        let company_id = old.company_id;
 
-        let target = company_scope::with_company_scope(
-            Some(company_id),
-            self.requests.fetch_stage(&self.pool, target_stage_id),
-        )
-        .await?
-        .ok_or(RequestWriteError::NotFound("stage"))?;
+        let target = self.requests.fetch_stage(&self.pool, target_stage_id).await?
+            .ok_or(RequestWriteError::NotFound("stage"))?;
 
         // Already there — idempotent no-op (a repeat or concurrent call changed nothing).
         if old.stage_id == target.id {
@@ -329,8 +307,9 @@ impl MaintenanceRequestWriteService {
         }
 
         let mut tx = self.pool.begin().await?;
-        // The request's own company — the transition tx writes requests/stages/outbox behind the fence.
-        company_scope::bind_company_on(&mut tx, company_id).await?;
+        // The ambient org scope — the transition tx writes requests/stages/outbox behind the
+        // composed decorator's fence (ADR-0029). Undecorated, the tx stays plain.
+        relay_ambient_scope(&mut tx).await?;
         // The managed-transition marker: transaction-local (set_config ..., true), so it cannot leak
         // across pool reuse — the same mechanism as app.company_id. This is what authorizes the G-MT5
         // recurrence arm to let a preventive recurring request close (the spawn follows below).
@@ -399,7 +378,6 @@ impl MaintenanceRequestWriteService {
                     self.requests
                         .insert_request_on(&mut tx, &NewRequestRow {
                             id: successor_id,
-                            company_id,
                             name: &old.name,
                             description: old.description.as_deref(),
                             schedule_date: Some(next),
@@ -426,18 +404,20 @@ impl MaintenanceRequestWriteService {
             }
         }
 
-        // ── Outbox: the stage change (and the spawn) land with the same commit.
+        // ── Outbox: the stage change (and the spawn) land with the same commit. The payloads and
+        // the outbox fence carry the ambient scope's legacy company echo (ADR-0029 twins).
+        let legacy_company = legacy_company_echo();
         let close_date = if target.done { Some(Utc::now().date_naive()) } else { None };
         let stage_event = MaintenanceEvent::MaintenanceRequestStageChanged(MaintenanceRequestStageChanged {
             request_id,
-            company_id,
+            company_id: legacy_company,
             from_stage_id: Some(from_stage_id),
             to_stage_id: target.id,
             close_date,
             spawned_successor_id,
         });
         let stage_record = backbone_outbox::OutboxRecord::new(
-            "MaintenanceRequestStageChanged", "MaintenanceRequest", request_id.to_string(), company_id,
+            "MaintenanceRequestStageChanged", "MaintenanceRequest", request_id.to_string(), legacy_company,
             serde_json::to_value(&stage_event).map_err(|e| RequestWriteError::Invalid(e.to_string()))?,
             Utc::now(),
         );
@@ -451,12 +431,12 @@ impl MaintenanceRequestWriteService {
             let spawn_event = MaintenanceEvent::SuccessorSpawned(SuccessorSpawned {
                 source_request_id: request_id,
                 successor_request_id: successor_id,
-                company_id,
+                company_id: legacy_company,
                 next_schedule_date: Some(next),
                 next_schedule_end: Some(next_end),
             });
             let spawn_record = backbone_outbox::OutboxRecord::new(
-                "SuccessorSpawned", "MaintenanceRequest", successor_id.to_string(), company_id,
+                "SuccessorSpawned", "MaintenanceRequest", successor_id.to_string(), legacy_company,
                 serde_json::to_value(&spawn_event).map_err(|e| RequestWriteError::Invalid(e.to_string()))?,
                 Utc::now(),
             );

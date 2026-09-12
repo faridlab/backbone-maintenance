@@ -75,7 +75,7 @@ async fn assert_verb_dispatches(uri: &str, body: Option<&str>) {
 }
 
 const ID: &str = "00000000-0000-0000-0000-000000000000";
-const PLAN_BODY: &str = r#"{"companyId":"00000000-0000-0000-0000-000000000000","assetId":"00000000-0000-0000-0000-000000000000","maintenanceType":"corrective","scheduledDate":"2026-01-01","maintenanceExpenseAccountId":"00000000-0000-0000-0000-000000000000","partsInventoryAccountId":"00000000-0000-0000-0000-000000000000","laborPayableAccountId":"00000000-0000-0000-0000-000000000000"}"#;
+const PLAN_BODY: &str = r#"{"assetId":"00000000-0000-0000-0000-000000000000","maintenanceType":"corrective","scheduledDate":"2026-01-01","maintenanceExpenseAccountId":"00000000-0000-0000-0000-000000000000","partsInventoryAccountId":"00000000-0000-0000-0000-000000000000","laborPayableAccountId":"00000000-0000-0000-0000-000000000000"}"#;
 
 #[tokio::test]
 async fn lifecycle_verbs_dispatch_through_the_engine() {

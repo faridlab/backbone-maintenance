@@ -34,9 +34,6 @@ use crate::domain::entity::MaintenanceScheduleStatus;
 #[serde(rename_all = "camelCase")]
 pub struct CreateMaintenanceScheduleDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(alias = "asset_id")]
     pub asset_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
@@ -63,9 +60,6 @@ pub struct CreateMaintenanceScheduleDto {
 #[cfg_attr(feature = "validation", derive(Validate))]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateMaintenanceScheduleDto {
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(alias = "company_id")]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(alias = "asset_id")]
     pub asset_id: Uuid,
@@ -94,9 +88,6 @@ pub struct UpdateMaintenanceScheduleDto {
 #[serde(rename_all = "camelCase")]
 pub struct PatchMaintenanceScheduleDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    #[serde(skip_serializing_if = "Option::is_none", alias = "company_id")]
-    pub company_id: Option<Uuid>,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "asset_id")]
     pub asset_id: Option<Uuid>,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
@@ -115,7 +106,7 @@ pub struct PatchMaintenanceScheduleDto {
 impl PatchMaintenanceScheduleDto {
     /// Check if any field is set
     pub fn has_changes(&self) -> bool {
-        self.company_id.is_some() || self.asset_id.is_some() || self.name.is_some() || self.interval_days.is_some() || self.next_due_date.is_some() || self.status.is_some()
+        self.asset_id.is_some() || self.name.is_some() || self.interval_days.is_some() || self.next_due_date.is_some() || self.status.is_some()
     }
 }
 
@@ -133,8 +124,6 @@ impl PatchMaintenanceScheduleDto {
 pub struct MaintenanceScheduleResponseDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     pub id: Uuid,
-    #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
-    pub company_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     pub asset_id: Uuid,
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
@@ -201,9 +190,9 @@ impl MaintenanceScheduleListResponseDto {
 #[serde(rename_all = "camelCase")]
 pub struct MaintenanceScheduleSummaryDto {
     pub id: Uuid,
-    pub company_id: Uuid,
     pub asset_id: Uuid,
     pub name: String,
+    pub interval_days: i32,
     pub created_at: Option<DateTime<Utc>>,
 }
 
@@ -215,7 +204,6 @@ impl From<MaintenanceSchedule> for MaintenanceScheduleResponseDto {
     fn from(entity: MaintenanceSchedule) -> Self {
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             asset_id: entity.asset_id,
             name: entity.name,
             interval_days: entity.interval_days,
@@ -231,9 +219,9 @@ impl From<MaintenanceSchedule> for MaintenanceScheduleSummaryDto {
         let created_at = backbone_core::PersistentEntity::created_at(&entity);
         Self {
             id: entity.id,
-            company_id: entity.company_id,
             asset_id: entity.asset_id,
             name: entity.name,
+            interval_days: entity.interval_days,
             created_at,
         }
     }
@@ -243,7 +231,6 @@ impl From<CreateMaintenanceScheduleDto> for MaintenanceSchedule {
     fn from(dto: CreateMaintenanceScheduleDto) -> Self {
         Self {
             id: Uuid::new_v4(),
-            company_id: dto.company_id,
             asset_id: dto.asset_id,
             name: dto.name,
             interval_days: dto.interval_days,
@@ -258,7 +245,6 @@ impl From<&MaintenanceSchedule> for MaintenanceScheduleResponseDto {
     fn from(entity: &MaintenanceSchedule) -> Self {
         Self {
             id: entity.id.clone(),
-            company_id: entity.company_id.clone(),
             asset_id: entity.asset_id.clone(),
             name: entity.name.clone(),
             interval_days: entity.interval_days.clone(),
@@ -277,7 +263,6 @@ impl backbone_core::FromCreateDto<CreateMaintenanceScheduleDto> for MaintenanceS
 
 impl backbone_core::ApplyUpdateDto<UpdateMaintenanceScheduleDto> for MaintenanceSchedule {
     fn apply_update(mut self, dto: UpdateMaintenanceScheduleDto) -> backbone_core::ServiceResult<Self> {
-        self.company_id = dto.company_id;
         self.asset_id = dto.asset_id;
         self.name = dto.name;
         self.interval_days = dto.interval_days;

@@ -7,8 +7,8 @@
 //! infrastructure. Direct mirror of `backbone-asset::AssetsQueryServiceImpl`.
 //!
 //! Reads use the repositories' generic `find_by_id` / `exists` (available via `Deref` on each
-//! hand-authored newtype). Under RLS (`app.company_id`), a read with no company scope set simply sees
-//! no rows; a composing service binds the caller's company onto its connection as usual.
+//! hand-authored newtype). Under the composed decorator's RLS (ADR-0029), a read with no org scope
+//! bound simply sees no rows; a composing service binds the caller's scope onto its connection.
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -129,7 +129,6 @@ impl From<crate::domain::entity::MaintenanceSchedule> for MaintenanceScheduleDto
     fn from(s: crate::domain::entity::MaintenanceSchedule) -> Self {
         Self {
             id: MaintenanceScheduleId(s.id),
-            company_id: s.company_id,
             asset_id: s.asset_id,
             name: s.name,
             interval_days: s.interval_days,
@@ -144,7 +143,6 @@ impl From<crate::domain::entity::MaintenanceVisit> for MaintenanceVisitDto {
     fn from(v: crate::domain::entity::MaintenanceVisit) -> Self {
         Self {
             id: MaintenanceVisitId(v.id),
-            company_id: v.company_id,
             asset_id: v.asset_id,
             schedule_id: v.schedule_id,
             maintenance_type: v.maintenance_type,
@@ -171,7 +169,6 @@ impl From<crate::domain::entity::MaintenanceVisitPart> for MaintenanceVisitPartD
     fn from(p: crate::domain::entity::MaintenanceVisitPart) -> Self {
         Self {
             id: MaintenanceVisitPartId(p.id),
-            company_id: p.company_id,
             visit_id: p.visit_id,
             item_id: p.item_id,
             quantity: p.quantity,
