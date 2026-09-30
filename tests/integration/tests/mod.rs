@@ -13,7 +13,6 @@ pub mod maintenance_visit_api_test;
 pub mod maintenance_visit_part_api_test;
 
 // Re-exports for convenience
-pub use crud_test_base::*;
 pub use maintenance_request_api_test::*;
 pub use maintenance_schedule_api_test::*;
 pub use maintenance_stage_api_test::*;

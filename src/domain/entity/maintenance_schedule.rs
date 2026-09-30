@@ -214,6 +214,7 @@ impl backbone_orm::EntityRepoMeta for MaintenanceSchedule {
         m.insert("id".to_string(), "uuid".to_string());
         m.insert("asset_id".to_string(), "uuid".to_string());
         m.insert("status".to_string(), "maintenance_schedule_status".to_string());
+        m.insert("next_due_date".to_string(), "date".to_string());
         m
     }
     fn search_fields() -> &'static [&'static str] {

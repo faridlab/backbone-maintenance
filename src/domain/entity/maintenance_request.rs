@@ -367,6 +367,11 @@ impl backbone_orm::EntityRepoMeta for MaintenanceRequest {
         m.insert("maintenance_type".to_string(), "maintenance_type".to_string());
         m.insert("repeat_unit".to_string(), "repeat_unit".to_string());
         m.insert("repeat_type".to_string(), "repeat_type".to_string());
+        m.insert("request_date".to_string(), "date".to_string());
+        m.insert("schedule_date".to_string(), "timestamptz".to_string());
+        m.insert("schedule_end".to_string(), "timestamptz".to_string());
+        m.insert("close_date".to_string(), "date".to_string());
+        m.insert("repeat_until".to_string(), "date".to_string());
         m
     }
     fn search_fields() -> &'static [&'static str] {

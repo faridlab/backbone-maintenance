@@ -9,7 +9,7 @@ use axum::Router;
 use std::sync::Arc;
 
 use super::{
-    maintenance_request_handler::create_maintenance_request_routes,
+    maintenance_request_handler::create_maintenance_request_read_routes,
     maintenance_schedule_handler::create_maintenance_schedule_routes,
     maintenance_stage_handler::create_maintenance_stage_routes,
     maintenance_visit_handler::create_maintenance_visit_routes,
@@ -50,8 +50,8 @@ pub struct HttpServices {
 /// 12. GET /api/v1/{collection}/:id/deleted - Get deleted by ID
 pub fn configure_routes(services: HttpServices) -> Router {
     Router::new()
-        // MaintenanceRequest routes (12 Backbone endpoints)
-        .merge(create_maintenance_request_routes(services.maintenance_request))
+        // MaintenanceRequest routes (READ-ONLY mount — hand_set lifecycle; the state field moves only through the module's validated verbs)
+        .merge(create_maintenance_request_read_routes(services.maintenance_request))
         // MaintenanceSchedule routes (12 Backbone endpoints)
         .merge(create_maintenance_schedule_routes(services.maintenance_schedule))
         // MaintenanceStage routes (12 Backbone endpoints)
@@ -67,7 +67,7 @@ pub mod individual {
     use super::*;
 
     pub fn maintenance_request_routes(service: Arc<MaintenanceRequestService>) -> Router {
-        create_maintenance_request_routes(service)
+        create_maintenance_request_read_routes(service)
     }
 
     pub fn maintenance_schedule_routes(service: Arc<MaintenanceScheduleService>) -> Router {
