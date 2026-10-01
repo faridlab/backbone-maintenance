@@ -36,13 +36,13 @@ use rust_decimal::Decimal;
 use sqlx::{Connection, PgConnection, PgPool, Row};
 use uuid::Uuid;
 
-use backbone_maintenance::application::service::maintenance_events::MaintenanceEvent;
-use backbone_maintenance::application::service::maintenance_request_write_service::{
+use backbone_cmms::application::service::maintenance_events::MaintenanceEvent;
+use backbone_cmms::application::service::maintenance_request_write_service::{
     MaintenanceRequestUpdate, MaintenanceRequestWriteService, NewMaintenanceRequest,
     RequestWriteError,
 };
-use backbone_maintenance::application::service::maintenance_write_service::NewVisit;
-use backbone_maintenance::domain::entity::{
+use backbone_cmms::application::service::maintenance_write_service::NewVisit;
+use backbone_cmms::domain::entity::{
     MaintenanceType, RequestKanbanState, RequestPriority, RepeatType, RepeatUnit,
 };
 
@@ -728,7 +728,7 @@ async fn p13_visit_engine_still_completes_beside_the_request_family() {
         .await
         .expect("create");
 
-    let write = backbone_maintenance::application::service::MaintenanceWriteService::new(pool.clone());
+    let write = backbone_cmms::application::service::MaintenanceWriteService::new(pool.clone());
     let inventory = FakeInventory::new("2500");
     let gl = CountingGl::new();
     let visit = write

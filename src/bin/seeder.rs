@@ -12,12 +12,12 @@ use sqlx::postgres::PgPoolOptions;
 use std::env;
 
 // Import seeders
-use backbone_maintenance::seeders::SeedMaintenanceRequestSeeder;
-use backbone_maintenance::seeders::SeedMaintenanceScheduleSeeder;
-use backbone_maintenance::seeders::SeedMaintenanceStageSeeder;
-use backbone_maintenance::seeders::SeedMaintenanceVisitSeeder;
-use backbone_maintenance::seeders::SeedMaintenanceVisitPartSeeder;
-use backbone_maintenance::seeders::Seeder;
+use backbone_cmms::seeders::SeedMaintenanceRequestSeeder;
+use backbone_cmms::seeders::SeedMaintenanceScheduleSeeder;
+use backbone_cmms::seeders::SeedMaintenanceStageSeeder;
+use backbone_cmms::seeders::SeedMaintenanceVisitSeeder;
+use backbone_cmms::seeders::SeedMaintenanceVisitPartSeeder;
+use backbone_cmms::seeders::Seeder;
 
 #[tokio::main]
 async fn main() -> Result<()> {

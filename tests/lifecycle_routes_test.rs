@@ -12,11 +12,11 @@ use std::time::Duration;
 use async_trait::async_trait;
 use axum::body::{to_bytes, Body};
 use axum::http::{Method, Request};
-use backbone_maintenance::application::service::{
+use backbone_cmms::application::service::{
     AccountingPostEnvelope, GlPostAck, GlPostRejected, GlPostSink, InventoryPort, InventoryRejected,
     IssueAck, MaintenanceEvent, MaintenanceEventSink, PartsIssue,
 };
-use backbone_maintenance::MaintenanceModule;
+use backbone_cmms::MaintenanceModule;
 use sqlx::postgres::PgPoolOptions;
 use tower::ServiceExt;
 

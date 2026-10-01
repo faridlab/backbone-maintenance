@@ -5,8 +5,8 @@
 mod common;
 use common::*;
 
-use backbone_maintenance::application::service::maintenance_events::LoggingSink;
-use backbone_maintenance::application::service::maintenance_write_service::*;
+use backbone_cmms::application::service::maintenance_events::LoggingSink;
+use backbone_cmms::application::service::maintenance_write_service::*;
 use rust_decimal::Decimal;
 use uuid::Uuid;
 

@@ -1,5 +1,5 @@
 [package]
-name = "backbone-maintenance"
+name = "backbone-cmms"
 version = "0.7.21"
 edition = "2021"
 description = "Minimal Backbone Framework module skeleton"

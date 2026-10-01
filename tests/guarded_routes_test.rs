@@ -8,7 +8,7 @@
 
 use axum::body::Body;
 use axum::http::{Method, Request, StatusCode};
-use backbone_maintenance::MaintenanceModule;
+use backbone_cmms::MaintenanceModule;
 use sqlx::postgres::PgPoolOptions;
 use tower::ServiceExt;
 
@@ -117,6 +117,6 @@ async fn query_service_delivers_the_published_read_contract() {
     // through the module (it was an unbacked promise before). Compile guarantees all 9 methods are
     // implemented; this proves the builder wires and delivers the contract object at runtime.
     let module = module_with_lazy_pool();
-    let _svc: std::sync::Arc<dyn backbone_maintenance::exports::MaintenanceQueryService> =
+    let _svc: std::sync::Arc<dyn backbone_cmms::exports::MaintenanceQueryService> =
         module.query_service();
 }

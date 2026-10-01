@@ -4,8 +4,8 @@
 mod common;
 use common::*;
 
-use backbone_maintenance::application::service::maintenance_events::LoggingSink;
-use backbone_maintenance::application::service::maintenance_write_service::*;
+use backbone_cmms::application::service::maintenance_events::LoggingSink;
+use backbone_cmms::application::service::maintenance_write_service::*;
 use uuid::Uuid;
 
 fn visit_dto(_company: Uuid, warehouse: Option<Uuid>, a: &MxAccounts) -> NewVisit {

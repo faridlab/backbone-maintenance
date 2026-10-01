@@ -7,18 +7,18 @@ use std::sync::{Arc, Mutex};
 
 use backbone_accounting::application::service::posting_service::{PostingLine, PostingRequest, PostingService};
 use backbone_accounting::infrastructure::persistence::SqlxPostingRepository;
-use backbone_maintenance::application::service::maintenance_events::{MaintenanceEvent, MaintenanceEventSink};
-use backbone_maintenance::application::service::maintenance_gl::{
+use backbone_cmms::application::service::maintenance_events::{MaintenanceEvent, MaintenanceEventSink};
+use backbone_cmms::application::service::maintenance_gl::{
     AccountingPostEnvelope, GlPostAck, GlPostRejected, GlPostSink,
 };
-use backbone_maintenance::application::service::maintenance_ports::*;
+use backbone_cmms::application::service::maintenance_ports::*;
 use rust_decimal::Decimal;
 use sqlx::PgPool;
 use uuid::Uuid;
 
 pub fn dburl() -> String {
     std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "postgres://postgres:postgres@localhost:5433/backbone_maintenance".into())
+        .unwrap_or_else(|_| "postgres://postgres:postgres@localhost:5433/backbone_cmms".into())
 }
 pub async fn pool() -> PgPool {
     PgPool::connect(&dburl()).await.expect("connect")
