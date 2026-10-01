@@ -269,36 +269,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "backbone-core"
-version = "2.7.35"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f857421832c0f767bee979eede388331ba7c9ca27a24cf087b5a5b4186f35c14"
-dependencies = [
- "anyhow",
- "async-trait",
- "axum",
- "backbone-messaging",
- "backbone-orm",
- "chrono",
- "prost",
- "regex",
- "serde",
- "serde_json",
- "serde_yaml",
- "sqlx",
- "thiserror 1.0.69",
- "tokio",
- "toml",
- "tonic",
- "tower 0.4.13",
- "tower-http 0.5.2",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "backbone-maintenance"
-version = "0.7.21"
+name = "backbone-cmms"
+version = "0.7.22"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -336,6 +308,34 @@ dependencies = [
  "utoipa",
  "uuid",
  "validator",
+]
+
+[[package]]
+name = "backbone-core"
+version = "2.7.35"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f857421832c0f767bee979eede388331ba7c9ca27a24cf087b5a5b4186f35c14"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "axum",
+ "backbone-messaging",
+ "backbone-orm",
+ "chrono",
+ "prost",
+ "regex",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "toml",
+ "tonic",
+ "tower 0.4.13",
+ "tower-http 0.5.2",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]

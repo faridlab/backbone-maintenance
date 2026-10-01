@@ -1,8 +1,8 @@
 [package]
 name = "backbone-cmms"
-version = "0.7.21"
+version = "0.7.22"
 edition = "2021"
-description = "Minimal Backbone Framework module skeleton"
+description = "Maintenance management (CMMS): maintenance requests and stages, preventive schedules and maintenance visits"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/faridlab/backbone-maintenance"
 exclude = [".claude/", ".github/", "graphify-out/"]
