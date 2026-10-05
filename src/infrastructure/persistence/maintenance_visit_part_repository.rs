@@ -84,7 +84,7 @@ impl MaintenanceVisitPartRepository {
         pool: &PgPool,
         visit_id: Uuid,
     ) -> Result<Vec<VisitPartRow>, sqlx::Error> {
-        let rows = company_scope::fetch_all_rows_scoped(
+        let rows = org_scope::fetch_all_rows_scoped(
             pool,
             sqlx::query(
                 "SELECT id, item_id, quantity FROM maintenance.maintenance_visit_parts WHERE visit_id=$1",

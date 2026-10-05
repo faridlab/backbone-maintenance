@@ -216,7 +216,7 @@ impl MaintenanceRequestRepository {
         pool: &PgPool,
         request_id: Uuid,
     ) -> Result<Option<RequestTransitionRow>, sqlx::Error> {
-        let row = company_scope::fetch_optional_row_scoped(
+        let row = org_scope::fetch_optional_row_scoped(
             pool,
             sqlx::query(
                 r#"SELECT r.name, r.description, r.schedule_date, r.schedule_end,
@@ -264,7 +264,7 @@ impl MaintenanceRequestRepository {
         pool: &PgPool,
         stage_id: Uuid,
     ) -> Result<Option<StageRefRow>, sqlx::Error> {
-        let row = company_scope::fetch_optional_row_scoped(
+        let row = org_scope::fetch_optional_row_scoped(
             pool,
             sqlx::query(
                 r#"SELECT id, name, sequence, done

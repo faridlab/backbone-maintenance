@@ -139,7 +139,7 @@ impl MaintenanceVisitRepository {
         pool: &PgPool,
         visit_id: Uuid,
     ) -> Result<Option<VisitCompletionRow>, sqlx::Error> {
-        let row = company_scope::fetch_optional_row_scoped(
+        let row = org_scope::fetch_optional_row_scoped(
             pool,
             sqlx::query(
                 r#"SELECT asset_id, status::text AS status, warehouse_id, labor_cost,
