@@ -162,7 +162,7 @@ impl MaintenanceModule {
 /// Builder for MaintenanceModule
 pub struct MaintenanceModuleBuilder {
     db_pool: Option<PgPool>,
-    // <<< CUSTOM
+    // <<< CUSTOM BUILDER FIELDS
     gl_sink: Option<Arc<dyn application::service::GlPostSink>>,
     inventory_port: Option<Arc<dyn application::service::InventoryPort>>,
     event_sink: Option<Arc<dyn application::service::MaintenanceEventSink>>,
