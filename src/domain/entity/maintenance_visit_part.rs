@@ -174,6 +174,9 @@ impl super::Entity for MaintenanceVisitPart {
 }
 
 impl backbone_core::PersistentEntity for MaintenanceVisitPart {
+    fn write_protected_fields() -> &'static [&'static str] {
+        &["unit_cost", "amount"]
+    }
     fn entity_id(&self) -> String {
         self.id.to_string()
     }

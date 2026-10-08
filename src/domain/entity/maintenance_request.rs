@@ -324,6 +324,9 @@ impl super::Entity for MaintenanceRequest {
 }
 
 impl backbone_core::PersistentEntity for MaintenanceRequest {
+    fn write_protected_fields() -> &'static [&'static str] {
+        &["kanban_state", "priority"]
+    }
     fn entity_id(&self) -> String {
         self.id.to_string()
     }

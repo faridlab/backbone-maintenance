@@ -66,6 +66,7 @@ impl From<ServiceError> for MaintenanceRequestError {
             ServiceError::AlreadyExists(ref msg) => Self::Validation(msg.clone()),
             ServiceError::Repository(ref e) => Self::Database(e.to_string()),
             ServiceError::Internal(ref msg) => Self::Internal(msg.clone()),
+            ServiceError::Violations(_) => Self::Validation(err.to_string()),
         }
     }
 }

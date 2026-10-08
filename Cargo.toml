@@ -1,6 +1,6 @@
 [package]
 name = "backbone-cmms"
-version = "0.7.24"
+version = "0.8.0"
 edition = "2021"
 description = "Maintenance management (CMMS): maintenance requests and stages, preventive schedules and maintenance visits"
 license = "MIT OR Apache-2.0"
@@ -20,16 +20,16 @@ path = "src/lib.rs"
 # or `rev = "<commit-sha>"`. Cargo dedupes the git fetch — the repo is only
 # cloned once even though four crates reference it.
 # -----------------------------------------------------------------------------
-backbone-core = { version = "2.7.35", features = ["postgres"] }
-backbone-orm = { version = "2.7.35" }
-backbone-auth = { version = "2.7.35" }
-backbone-messaging = { version = "2.7.35" }
+backbone-core = { version = "3.0.0", features = ["postgres"] }
+backbone-orm = { version = "3.0.0" }
+backbone-auth = { version = "3.0.0" }
+backbone-messaging = { version = "3.0.0" }
 # Transactional outbox — MaintenanceCompleted is staged in the same tx as the completion (durable).
 # The outbox record carries a company field as the shared crate's wire contract (the legacy
 # echo fills it; nil undecorated) — the module never keys a statement on it and never
 # runs the outbox migrate, so the multi-tenant fence feature stays off: the module is
 # tenant-agnostic and the composing service owns isolation.
-backbone-outbox = { version = "2.7.35" }
+backbone-outbox = { version = "3.0.0" }
 
 # Core async runtime and serialization
 tokio = { version = "1.0", features = ["full"] }
@@ -101,4 +101,4 @@ rand = "0.8"
 # TEST-ONLY edge: the completion posts the maintenance-cost journal into the REAL backbone-accounting
 # ledger via an in-test ACL adapter (GlPostSink). Dev-dependency ONLY — the shipped library has ZERO
 # normal Cargo edge to accounting; the envelope is the wire contract.
-backbone-accounting = { version = "0.9.27" }
+backbone-accounting = { version = "0.10.0" }
