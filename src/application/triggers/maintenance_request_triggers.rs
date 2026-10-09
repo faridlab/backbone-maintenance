@@ -20,6 +20,6 @@ pub type MaintenanceRequestTriggerHandlerObj =
 
 /// Create a default registry pre-populated with all handlers for MaintenanceRequest.
 pub fn maintenance_request_trigger_registry() -> MaintenanceRequestTriggerRegistry {
-    TriggerRegistry::build(|r| {
+    TriggerRegistry::build(|_r| {
     })
 }

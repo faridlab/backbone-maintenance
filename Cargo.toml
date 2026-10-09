@@ -1,6 +1,6 @@
 [package]
 name = "backbone-cmms"
-version = "0.8.0"
+version = "0.8.1"
 edition = "2021"
 description = "Maintenance management (CMMS): maintenance requests and stages, preventive schedules and maintenance visits"
 license = "MIT OR Apache-2.0"
