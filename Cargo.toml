@@ -1,6 +1,6 @@
 [package]
 name = "backbone-cmms"
-version = "0.8.1"
+version = "0.8.2"
 edition = "2021"
 description = "Maintenance management (CMMS): maintenance requests and stages, preventive schedules and maintenance visits"
 license = "MIT OR Apache-2.0"
@@ -101,4 +101,4 @@ rand = "0.8"
 # TEST-ONLY edge: the completion posts the maintenance-cost journal into the REAL backbone-accounting
 # ledger via an in-test ACL adapter (GlPostSink). Dev-dependency ONLY — the shipped library has ZERO
 # normal Cargo edge to accounting; the envelope is the wire contract.
-backbone-accounting = { version = "0.10.0" }
+backbone-accounting = { version = "0.11.0" }
