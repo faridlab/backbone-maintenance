@@ -17,7 +17,6 @@ pub fn maintenance_request_validator() -> MaintenanceRequestValidator {
     EntityValidator::new()
         .rule(RequiredString::new("name", |e: &MaintenanceRequest| &e.name))
         .rule(OptionalNotBlank::new("description", |e: &MaintenanceRequest| e.description.as_deref()))
-    // <<< CUSTOM RULES
     // hook rule: G-MT2 (implement in CUSTOM zone)
     // hook rule: G-MT3 (implement in CUSTOM zone)
     // hook rule: G-MT7 (implement in CUSTOM zone)
@@ -25,8 +24,5 @@ pub fn maintenance_request_validator() -> MaintenanceRequestValidator {
     // hook rule: G-MT5 (implement in CUSTOM zone)
     // hook rule: G-MT6 (implement in CUSTOM zone)
     // hook rule: G-MT_STAGE_FK (implement in CUSTOM zone)
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

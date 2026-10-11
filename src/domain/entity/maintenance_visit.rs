@@ -289,8 +289,6 @@ impl MaintenanceVisit {
         }
     }
 
-    // <<< CUSTOM METHODS START >>>
-    // <<< CUSTOM METHODS END >>>
 }
 
 impl super::Entity for MaintenanceVisit {

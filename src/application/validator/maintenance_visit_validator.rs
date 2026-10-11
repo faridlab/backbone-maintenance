@@ -16,9 +16,5 @@ pub type MaintenanceVisitValidator = EntityValidator<MaintenanceVisit>;
 pub fn maintenance_visit_validator() -> MaintenanceVisitValidator {
     EntityValidator::new()
         .rule(OptionalNotBlank::new("notes", |e: &MaintenanceVisit| e.notes.as_deref()))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

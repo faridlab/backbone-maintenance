@@ -14,5 +14,3 @@ pub use maintenance_stage_domain_policy::MaintenanceStageDomainPolicy;
 pub use maintenance_visit_domain_policy::MaintenanceVisitDomainPolicy;
 pub use maintenance_visit_part_domain_policy::MaintenanceVisitPartDomainPolicy;
 
-// <<< CUSTOM
-// END CUSTOM

@@ -260,7 +260,7 @@ impl backbone_core::ApplyUpdateDto<UpdateMaintenanceStageDto> for MaintenanceSta
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to MaintenanceStage here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

@@ -12,5 +12,3 @@ pub mod maintenance_stage_specification;
 pub mod maintenance_visit_specification;
 pub mod maintenance_visit_part_specification;
 
-// <<< CUSTOM
-// END CUSTOM

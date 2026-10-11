@@ -11,8 +11,6 @@ use crate::domain::entity::MaintenanceRequest;
 /// enum containing a `Crud(CrudEvent<MaintenanceRequest>)` variant.
 pub type MaintenanceRequestEvent = CrudEvent<MaintenanceRequest>;
 
-// <<< CUSTOM
-// END CUSTOM
 
 use backbone_messaging::{CrudEventPublisher, NoOpCrudEventPublisher};
 use std::sync::Arc;

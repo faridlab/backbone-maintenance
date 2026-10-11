@@ -16,9 +16,5 @@ pub type MaintenanceScheduleValidator = EntityValidator<MaintenanceSchedule>;
 pub fn maintenance_schedule_validator() -> MaintenanceScheduleValidator {
     EntityValidator::new()
         .rule(RequiredString::new("name", |e: &MaintenanceSchedule| &e.name))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

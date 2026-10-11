@@ -14,7 +14,6 @@ pub struct MaintenanceRequestDomainPolicy;
 
 #[async_trait]
 impl DomainPolicy<MaintenanceRequest> for MaintenanceRequestDomainPolicy {
-    // <<< CUSTOM
     // Add entity-specific invariant checks here.
     // Example:
     // async fn can_delete(&self, entity: &MaintenanceRequest) -> PolicyDecision {
@@ -22,5 +21,4 @@ impl DomainPolicy<MaintenanceRequest> for MaintenanceRequestDomainPolicy {
     //         Err("locked maintenance_request cannot be deleted".into())
     //     } else { Ok(true) }
     // }
-    // END CUSTOM
 }

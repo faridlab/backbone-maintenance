@@ -32,5 +32,3 @@ pub type MaintenanceRequestService = GenericCrudService<
     MaintenanceRequestRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

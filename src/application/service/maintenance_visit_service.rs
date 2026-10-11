@@ -32,5 +32,3 @@ pub type MaintenanceVisitService = GenericCrudService<
     MaintenanceVisitRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM

@@ -15,10 +15,6 @@ pub type MaintenanceVisitPartValidator = EntityValidator<MaintenanceVisitPart>;
 /// Build a validator for MaintenanceVisitPart with all schema-defined field rules.
 pub fn maintenance_visit_part_validator() -> MaintenanceVisitPartValidator {
     EntityValidator::new()
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
         // No schema-derived rules — add custom rules above.
 }
 
-// <<< CUSTOM
-// END CUSTOM

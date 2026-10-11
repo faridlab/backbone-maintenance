@@ -11,8 +11,6 @@ pub mod maintenance_stage_handler;
 pub mod maintenance_visit_handler;
 pub mod maintenance_visit_part_handler;
 
-// <<< CUSTOM
-// END CUSTOM
 
 // Re-exports
 pub use maintenance_request_handler::{create_maintenance_request_routes, create_maintenance_request_read_routes, create_maintenance_request_write_routes};
@@ -20,8 +18,6 @@ pub use maintenance_schedule_handler::{create_maintenance_schedule_routes, creat
 pub use maintenance_stage_handler::{create_maintenance_stage_routes, create_maintenance_stage_read_routes, create_maintenance_stage_write_routes};
 pub use maintenance_visit_handler::{create_maintenance_visit_routes, create_maintenance_visit_read_routes, create_maintenance_visit_write_routes};
 pub use maintenance_visit_part_handler::{create_maintenance_visit_part_routes, create_maintenance_visit_part_read_routes, create_maintenance_visit_part_write_routes};
-// <<< CUSTOM
-// END CUSTOM
 
 // This directory's extension (hand-written; ADR-0031).
 include!("mod.ext.rs");

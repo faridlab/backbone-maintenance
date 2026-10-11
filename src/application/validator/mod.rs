@@ -17,5 +17,3 @@ pub use maintenance_stage_validator::{MaintenanceStageValidator, maintenance_sta
 pub use maintenance_visit_validator::{MaintenanceVisitValidator, maintenance_visit_validator};
 pub use maintenance_visit_part_validator::{MaintenanceVisitPartValidator, maintenance_visit_part_validator};
 
-// <<< CUSTOM
-// END CUSTOM

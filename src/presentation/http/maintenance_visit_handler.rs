@@ -188,3 +188,4 @@ pub fn create_protected_maintenance_visit_routes<A: AuthMiddleware + Send + Sync
             }
         }))
 }
+

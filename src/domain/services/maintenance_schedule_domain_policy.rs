@@ -18,5 +18,3 @@ use crate::domain::entity::MaintenanceSchedule;
 /// service. `PermitAllPolicy` is the safe default until then.
 pub type MaintenanceScheduleDomainPolicy = PermitAllPolicy<MaintenanceSchedule>;
 
-// <<< CUSTOM
-// END CUSTOM

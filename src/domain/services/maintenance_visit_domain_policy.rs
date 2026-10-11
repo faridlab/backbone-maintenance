@@ -18,5 +18,3 @@ use crate::domain::entity::MaintenanceVisit;
 /// service. `PermitAllPolicy` is the safe default until then.
 pub type MaintenanceVisitDomainPolicy = PermitAllPolicy<MaintenanceVisit>;
 
-// <<< CUSTOM
-// END CUSTOM

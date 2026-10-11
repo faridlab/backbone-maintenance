@@ -10,47 +10,9 @@
 // CUSTOM SERVICES
 // ============================================================================
 
-// <<< CUSTOM SERVICES START >>>
-// The generator emits no query-service trait for this module (it stopped emitting them for
-// hand-service modules), so the trait lives here — user-owned via the CUSTOM marker — and the
-// module builder hands out `Arc<dyn MaintenanceQueryService>` through it.
+// Add custom public services here
 
-use anyhow::Result;
-use async_trait::async_trait;
-
-use super::types::*;
-
-/// Public query service for Maintenance module
-///
-/// This trait defines read-only operations that other modules can use.
-/// Implementations should NOT expose internal domain logic.
-#[async_trait]
-pub trait MaintenanceQueryService: Send + Sync {
-    /// Get MaintenanceSchedule by ID
-    async fn get_maintenance_schedule(&self, id: MaintenanceScheduleId) -> Result<Option<MaintenanceScheduleDto>>;
-
-    /// Get MaintenanceSchedule summary by ID
-    async fn get_maintenance_schedule_summary(&self, id: MaintenanceScheduleId) -> Result<Option<MaintenanceScheduleSummary>>;
-
-    /// Check if MaintenanceSchedule exists
-    async fn maintenance_schedule_exists(&self, id: MaintenanceScheduleId) -> Result<bool>;
-
-    /// Get MaintenanceVisit by ID
-    async fn get_maintenance_visit(&self, id: MaintenanceVisitId) -> Result<Option<MaintenanceVisitDto>>;
-
-    /// Get MaintenanceVisit summary by ID
-    async fn get_maintenance_visit_summary(&self, id: MaintenanceVisitId) -> Result<Option<MaintenanceVisitSummary>>;
-
-    /// Check if MaintenanceVisit exists
-    async fn maintenance_visit_exists(&self, id: MaintenanceVisitId) -> Result<bool>;
-
-    /// Get MaintenanceVisitPart by ID
-    async fn get_maintenance_visit_part(&self, id: MaintenanceVisitPartId) -> Result<Option<MaintenanceVisitPartDto>>;
-
-    /// Get MaintenanceVisitPart summary by ID
-    async fn get_maintenance_visit_part_summary(&self, id: MaintenanceVisitPartId) -> Result<Option<MaintenanceVisitPartSummary>>;
-
-    /// Check if MaintenanceVisitPart exists
-    async fn maintenance_visit_part_exists(&self, id: MaintenanceVisitPartId) -> Result<bool>;
-}
-// <<< CUSTOM SERVICES END >>>
+// This file's extension (hand-written; ADR-0031).
+#[path = "services.ext.rs"]
+mod services_ext;
+pub use services_ext::*;

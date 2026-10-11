@@ -16,9 +16,5 @@ pub type MaintenanceStageValidator = EntityValidator<MaintenanceStage>;
 pub fn maintenance_stage_validator() -> MaintenanceStageValidator {
     EntityValidator::new()
         .rule(RequiredString::new("name", |e: &MaintenanceStage| &e.name))
-    // <<< CUSTOM RULES
-    // END CUSTOM RULES
 }
 
-// <<< CUSTOM
-// END CUSTOM

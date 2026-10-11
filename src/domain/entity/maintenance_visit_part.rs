@@ -157,8 +157,6 @@ impl MaintenanceVisitPart {
         }
     }
 
-    // <<< CUSTOM METHODS START >>>
-    // <<< CUSTOM METHODS END >>>
 }
 
 impl super::Entity for MaintenanceVisitPart {

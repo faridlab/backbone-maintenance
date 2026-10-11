@@ -13,16 +13,12 @@ pub mod maintenance_stage_service;
 pub mod maintenance_visit_service;
 pub mod maintenance_visit_part_service;
 
-// <<< CUSTOM
-// END CUSTOM
 
 pub use maintenance_request_service::MaintenanceRequestService;
 pub use maintenance_schedule_service::MaintenanceScheduleService;
 pub use maintenance_stage_service::MaintenanceStageService;
 pub use maintenance_visit_service::MaintenanceVisitService;
 pub use maintenance_visit_part_service::MaintenanceVisitPartService;
-// <<< CUSTOM
-// END CUSTOM
 
 // This directory's extension (hand-written; ADR-0031).
 include!("mod.ext.rs");

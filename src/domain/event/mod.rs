@@ -24,5 +24,3 @@ pub use maintenance_visit_event_handlers::MaintenanceVisitEventHandler;
 pub use maintenance_visit_part_events::{MaintenanceVisitPartEvent, MaintenanceVisitPartEventPublisher, NoopMaintenanceVisitPartEventPublisher};
 pub use maintenance_visit_part_event_handlers::MaintenanceVisitPartEventHandler;
 
-// <<< CUSTOM
-// END CUSTOM

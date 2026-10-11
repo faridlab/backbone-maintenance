@@ -457,7 +457,7 @@ impl backbone_core::ApplyUpdateDto<UpdateMaintenanceRequestDto> for MaintenanceR
 // Custom DTOs
 // =============================================================================
 
-// <<< CUSTOM DTOs
 // Add custom DTOs specific to MaintenanceRequest here.
 // This section will be preserved during regeneration.
 // >>> END CUSTOM DTOs
+

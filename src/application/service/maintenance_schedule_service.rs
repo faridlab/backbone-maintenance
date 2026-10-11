@@ -32,5 +32,3 @@ pub type MaintenanceScheduleService = GenericCrudService<
     MaintenanceScheduleRepository,
 >;
 
-// <<< CUSTOM
-// END CUSTOM
