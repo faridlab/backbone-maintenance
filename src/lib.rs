@@ -222,7 +222,7 @@ impl MaintenanceModuleBuilder {
 
         // MaintenanceRequest service
         let maintenance_request_repository = Arc::new(MaintenanceRequestRepository::new(db_pool.clone()));
-        let maintenance_request_service = Arc::new(MaintenanceRequestService::with_repository(maintenance_request_repository.clone()));
+        let maintenance_request_service = Arc::new(MaintenanceRequestService::with_repository(maintenance_request_repository.clone()).with_guard(Arc::new(crate::application::service::MaintenanceRequestRowRules)));
 
         // MaintenanceSchedule service
         let maintenance_schedule_repository = Arc::new(MaintenanceScheduleRepository::new(db_pool.clone()));

@@ -32,3 +32,34 @@ pub type MaintenanceRequestService = GenericCrudService<
     MaintenanceRequestRepository,
 >;
 
+/// The row rules the schema declares for MaintenanceRequest, checked against the row a create or
+/// update would store. The generated build attaches it to [`MaintenanceRequestService`]. Every rule
+/// runs in shadow: a break is logged under `backbone::write_guard` and the write goes ahead.
+pub struct MaintenanceRequestRowRules;
+
+#[async_trait::async_trait]
+impl backbone_core::write_guard::WriteGuard<MaintenanceRequest> for MaintenanceRequestRowRules {
+    async fn check(
+        &self,
+        ctx: &backbone_core::write_guard::WriteCtx<'_, MaintenanceRequest>,
+    ) -> backbone_core::write_guard::GuardOutcome {
+        use backbone_core::row_rule as r;
+        use backbone_core::violation::Violation;
+        use backbone_core::write_guard::{GuardOutcome, WriteKind};
+        let (create, update) = (ctx.kind == WriteKind::Create, ctx.kind == WriteKind::Update);
+        let Some(after) = ctx.after.filter(|_| create || update) else {
+            return GuardOutcome::allow();
+        };
+        let Ok(row) = serde_json::to_value(after) else {
+            return GuardOutcome::allow();
+        };
+        let row = &row;
+        let mut shadow = Vec::new();
+        // `G-MT3` (convergence_guards.hook.yaml:31)
+        if (create || update) && !r::holds(&r::ge(r::field(row, "repeat_interval"), r::Val::Num(1.0_f64))) {
+            shadow.push(Violation::new("repeat_interval", "request_repeat_interval_below_one", "A recurrence step must be at least one unit."));
+        }
+        GuardOutcome { refuse: Vec::new(), shadow }
+    }
+}
+

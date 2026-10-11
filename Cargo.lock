@@ -234,9 +234,9 @@ dependencies = [
 
 [[package]]
 name = "backbone-auth"
-version = "3.2.0"
+version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01248327da4d12567ce9abea7c8482e2e88f8fd4b734a26838921e3c091247d9"
+checksum = "b257729b137ae78cbdae1d3def2daea04fb63f3064712a17470d0ed4f0e00eb9"
 dependencies = [
  "anyhow",
  "argon2",
@@ -262,7 +262,7 @@ dependencies = [
 
 [[package]]
 name = "backbone-cmms"
-version = "0.8.2"
+version = "0.8.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -304,9 +304,9 @@ dependencies = [
 
 [[package]]
 name = "backbone-core"
-version = "3.2.0"
+version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c25ef1f0f099a6088c5af14d292bbd30deea35366996640a56e57e7d0244439"
+checksum = "23dcdb94a08fc7ae920bf2d7203aa8e31d009484d08f3ef6237936320747729c"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -332,9 +332,9 @@ dependencies = [
 
 [[package]]
 name = "backbone-messaging"
-version = "3.2.0"
+version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14ec1f37f1e217a8c4ceedb1d845e215a0b60d7fc1caf094a46e6ca82f0d32cb"
+checksum = "7f09cf8e0064786c4cd5899c39ba99d131c50fae53d57d707200f69c05b1f8e5"
 dependencies = [
  "async-trait",
  "chrono",
@@ -348,9 +348,9 @@ dependencies = [
 
 [[package]]
 name = "backbone-orm"
-version = "3.2.0"
+version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "299f54e3b9ee005f58769233b4c15b3bf99c2bc803caeadc1027009daadcd723"
+checksum = "96532cffbb710915e0a843f7c1b08d924ef949eb88019e25d875b3602b7bd38b"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -368,9 +368,9 @@ dependencies = [
 
 [[package]]
 name = "backbone-outbox"
-version = "3.2.0"
+version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba36cf1a21ec242e831e6270cb923074f09c49bede9b94cb252f237df8757537"
+checksum = "856a3ca5505a81a52b9b8f8e76136722fd798d648c03ab9e3dae801e000bbdc5"
 dependencies = [
  "chrono",
  "serde",
