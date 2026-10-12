@@ -55,7 +55,7 @@ impl backbone_core::write_guard::WriteGuard<MaintenanceRequest> for MaintenanceR
         };
         let row = &row;
         let mut shadow = Vec::new();
-        // `G-MT3` (convergence_guards.hook.yaml:31)
+        // `G-MT3` (convergence_guards.hook.yaml:32)
         if (create || update) && !r::holds(&r::ge(r::field(row, "repeat_interval"), r::Val::Num(1.0_f64))) {
             shadow.push(Violation::new("repeat_interval", "request_repeat_interval_below_one", "A recurrence step must be at least one unit."));
         }

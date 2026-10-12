@@ -1,13 +1,9 @@
 # The rule ratchet (schema doctor): these counts may only go down. Regenerate with
 # `metaphor schema rules . --update-baseline` after enforcing a rule.
-unenforced: 6
+unenforced: 2
 warnings: 0
 machines_without_verbs: 0
 untested_rule_ids: 0
 unenforced_rules:
-- 'convergence_guards.hook.yaml: G-MT2'
 - 'convergence_guards.hook.yaml: G-MT5'
 - 'convergence_guards.hook.yaml: G-MT6'
-- 'convergence_guards.hook.yaml: G-MT7'
-- 'convergence_guards.hook.yaml: G-MT8'
-- 'convergence_guards.hook.yaml: G-MT_STAGE_FK'

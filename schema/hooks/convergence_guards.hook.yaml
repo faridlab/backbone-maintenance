@@ -26,7 +26,8 @@ rules:
     code: request_schedule_end_before_start
     severity: error
     enforcement: both
-    justification: "DB arm: CHECK constraint on maintenance_requests. The fire-rule is WIDENED per ADR-0015 — a CHECK fires on every INSERT/UPDATE regardless of which column changed, so updating schedule_date past an existing schedule_end is caught too (the Odoo defect was ORM trigger-field narrowness: @api.constrains fired only on schedule_end writes). Service arm: the write service pre-checks on create AND on any update touching EITHER column."
+    enforced_by: "migrations/20260829150000_create_request_family.up.sql::chk_maintenance_requests_schedule_order, src/application/service/maintenance_request_write_service.rs::guard_schedule"
+    justification: "DB arm: the CHECK fires on every insert and update whichever column changed. Service arm: the write service refuses first with a typed 422; an update racing another edit reaches the CHECK and answers 500."
 
   G-MT3:
     when: [create, update]
@@ -35,7 +36,8 @@ rules:
     code: request_repeat_interval_below_one
     severity: error
     enforcement: both
-    justification: "DB arm: CHECK constraint on maintenance_requests (the Odoo guard was ORM-only). Service arm: friendly 422 from the write service before the write."
+    enforced_by: "migrations/20260829150000_create_request_family.up.sql::chk_maintenance_requests_repeat_interval_positive, src/application/service/maintenance_request_write_service.rs::guard_repeat_interval"
+    justification: "DB arm: the CHECK on maintenance_requests. Service arm: a typed 422 from the write service before the write; a racing update reaches the CHECK and answers 500."
 
   G-MT7:
     when: [create, update]
@@ -45,6 +47,8 @@ rules:
     severity: error
     enforcement: db
     note: "The citation fence made structural: Odoo accepts repeat_type='until' with a null repeat_until and then silently never spawns (MTB-7, fenced — do not transcribe the latent bug). Here such a request is REJECTED at the DB, never silently non-spawning. The service adds a 422 pre-check for UX; the fence IS the guard."
+    enforced_by: "migrations/20260829150000_create_request_family.up.sql::chk_maintenance_requests_repeat_until_required, src/application/service/maintenance_request_write_service.rs::guard_repeat_until"
+    justification: "DB arm: the CHECK on maintenance_requests. Service arm: a typed 422 from the write service before the write; a racing update reaches the CHECK and answers 500."
 
   G-MT8:
     when: [create, update]
@@ -53,7 +57,8 @@ rules:
     code: request_corrective_cannot_recur
     severity: error
     enforcement: both
-    justification: "DB arm: CHECK constraint on maintenance_requests (MTB-4). Service arm: typed 422 from the write service."
+    enforced_by: "migrations/20260829150000_create_request_family.up.sql::chk_maintenance_requests_only_preventive_recur, src/application/service/maintenance_request_write_service.rs::guard_recurring"
+    justification: "DB arm: the CHECK on maintenance_requests. Service arm: a typed 422 from the write service before the write; a racing update reaches the CHECK and answers 500."
 
   G-MT5:
     when: [update]
@@ -62,16 +67,18 @@ rules:
     code: maintenance_recurring_close_requires_service_verb
     severity: error
     enforcement: both
-    justification: "The MTB-1/MTB-2 mechanism (kanban reset + close_date sync) and the recurrence raise live in one BEFORE INSERT OR UPDATE trigger on maintenance_requests. A CHECK cannot express close_date — it must reference the stage table's done flag — so the trigger is the mechanism; the trigger is a CONSISTENCY guard, not a security boundary. The managed path is the service verb, which sets the transaction-local app.maintenance_managed_transition flag before its CAS UPDATE; a raw-SQL close of a preventive recurring request raises maintenance_recurring_close_requires_service_verb because it would skip the successor spawn (anti-corruption, MTB-2). A raw stage change of any NON-recurring request passes through the trigger and still lands the correct kanban reset + close_date."
+    justification: "PARTLY: the maintenance_requests_stage_transition trigger refuses a raw close of a recurring preventive request and the transition verb spawns the successor under the managed flag, but the verb decides done-ness from an unlocked read and its compare-and-set does not pin the old stage, so a concurrent stage move can close without a successor; a request created straight into a done stage, or left on a stage whose done flag is later set, never spawns; and an explicit kanban state equal to the current one is still reset."
 
   G-MT6:
     when: [soft_delete]
+    entity: MaintenanceStage
     condition: "no live maintenance_requests row (metadata->>'deleted_at' IS NULL) references the stage"
     message: "A stage referenced by live requests cannot be deleted."
     code: maintenance_stage_in_use
     severity: error
     enforcement: db
     note: "The honest G-MT4 analog (G-MT4 itself guards an equipment CATEGORY delete, and no category entity exists this pass). Hard DELETE is blocked by the stage FK (ON DELETE RESTRICT); SOFT delete (metadata->>'deleted_at' set) of a referenced stage is blocked by a BEFORE UPDATE trigger on maintenance_stages raising maintenance_stage_in_use."
+    justification: "PARTLY: the maintenance_stages_soft_delete_guard trigger refuses soft-deleting a stage with live requests and the stage foreign key refuses a hard delete, but a create or transition racing the delete can still land a request on the stage, the refusal answers 500 rather than maintenance_stage_in_use, and the guard sees requests of every unit only when its owner bypasses row security."
 
   G-MT_STAGE_FK:
     when: [create, update]
@@ -81,6 +88,8 @@ rules:
     severity: error
     enforcement: db
     note: "In-module REAL FK (the ondelete=restrict analog) — raw-SQL safe by construction: an insert or update pointing at a missing stage raises the FK violation."
+    enforced_by: "migrations/20260829150000_create_request_family.up.sql::fk_maintenance_requests_stage_id"
+    justification: "The foreign key refuses a request naming a missing stage on every path; the service answers a missing stage as not found, a raw violation answers 500, and the key does not see soft deletion."
 
 # Scheduled jobs: NONE. The request family's recurrence is the clone-on-done
 # engine inside the transition transaction — zero crons is a hard invariant of
