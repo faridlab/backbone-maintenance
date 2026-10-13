@@ -214,6 +214,9 @@ impl backbone_orm::EntityRepoMeta for MaintenanceVisitPart {
     fn search_fields() -> &'static [&'static str] {
         &[]
     }
+    fn relations() -> &'static [(&'static str, &'static str, &'static str)] {
+        &[("visit", "maintenance_visits", "visitId")]
+    }
 }
 
 /// Builder for MaintenanceVisitPart entity
