@@ -56,7 +56,7 @@ impl backbone_core::write_guard::WriteGuard<MaintenanceVisit> for MaintenanceVis
         };
         let row = &row;
         let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
-        let mut shadow = Vec::new();
+        let shadow = Vec::new();
         let mut refuse = Vec::new();
         // `asset_id_required` (@required on MaintenanceVisit.asset_id)
         if (create || (update && r::changed(old.as_ref(), row, &["asset_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "asset_id")), r::not(r::is_empty(r::trim(r::field(row, "asset_id")))))) {
@@ -64,19 +64,19 @@ impl backbone_core::write_guard::WriteGuard<MaintenanceVisit> for MaintenanceVis
         }
         // `labor_cost_non_negative` (@non_negative on MaintenanceVisit.labor_cost)
         if (create || (update && r::changed(old.as_ref(), row, &["labor_cost"]))) && !r::holds(&r::ge(r::field(row, "labor_cost"), r::Val::Num(0.0_f64))) {
-            shadow.push(Violation::new("labor_cost", "non_negative", "labor_cost must not be negative"));
+            refuse.push(Violation::new("labor_cost", "non_negative", "labor_cost must not be negative"));
         }
         // `parts_cost_non_negative` (@non_negative on MaintenanceVisit.parts_cost)
         if (create || (update && r::changed(old.as_ref(), row, &["parts_cost"]))) && !r::holds(&r::ge(r::field(row, "parts_cost"), r::Val::Num(0.0_f64))) {
-            shadow.push(Violation::new("parts_cost", "non_negative", "parts_cost must not be negative"));
+            refuse.push(Violation::new("parts_cost", "non_negative", "parts_cost must not be negative"));
         }
         // `total_cost_non_negative` (@non_negative on MaintenanceVisit.total_cost)
         if (create || (update && r::changed(old.as_ref(), row, &["total_cost"]))) && !r::holds(&r::ge(r::field(row, "total_cost"), r::Val::Num(0.0_f64))) {
-            shadow.push(Violation::new("total_cost", "non_negative", "total_cost must not be negative"));
+            refuse.push(Violation::new("total_cost", "non_negative", "total_cost must not be negative"));
         }
         // `notes_max_length` (@length(max=2000) on MaintenanceVisit.notes)
         if (create || (update && r::changed(old.as_ref(), row, &["notes"]))) && !r::holds(&r::le(r::length(r::field(row, "notes")), r::Val::Num(2000.0_f64))) {
-            shadow.push(Violation::new("notes", "max_length", "notes must be at most 2000 characters").with_param("max", 2000_i64));
+            refuse.push(Violation::new("notes", "max_length", "notes must be at most 2000 characters").with_param("max", 2000_i64));
         }
         GuardOutcome { refuse, shadow }
     }

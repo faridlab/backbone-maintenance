@@ -56,7 +56,7 @@ impl backbone_core::write_guard::WriteGuard<MaintenanceVisitPart> for Maintenanc
         };
         let row = &row;
         let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
-        let mut shadow = Vec::new();
+        let shadow = Vec::new();
         let mut refuse = Vec::new();
         // `visit_id_required` (@required on MaintenanceVisitPart.visit_id)
         if (create || (update && r::changed(old.as_ref(), row, &["visit_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "visit_id")), r::not(r::is_empty(r::trim(r::field(row, "visit_id")))))) {
@@ -68,15 +68,15 @@ impl backbone_core::write_guard::WriteGuard<MaintenanceVisitPart> for Maintenanc
         }
         // `quantity_non_negative` (@non_negative on MaintenanceVisitPart.quantity)
         if (create || (update && r::changed(old.as_ref(), row, &["quantity"]))) && !r::holds(&r::ge(r::field(row, "quantity"), r::Val::Num(0.0_f64))) {
-            shadow.push(Violation::new("quantity", "non_negative", "quantity must not be negative"));
+            refuse.push(Violation::new("quantity", "non_negative", "quantity must not be negative"));
         }
         // `unit_cost_non_negative` (@non_negative on MaintenanceVisitPart.unit_cost)
         if (create || (update && r::changed(old.as_ref(), row, &["unit_cost"]))) && !r::holds(&r::ge(r::field(row, "unit_cost"), r::Val::Num(0.0_f64))) {
-            shadow.push(Violation::new("unit_cost", "non_negative", "unit_cost must not be negative"));
+            refuse.push(Violation::new("unit_cost", "non_negative", "unit_cost must not be negative"));
         }
         // `amount_non_negative` (@non_negative on MaintenanceVisitPart.amount)
         if (create || (update && r::changed(old.as_ref(), row, &["amount"]))) && !r::holds(&r::ge(r::field(row, "amount"), r::Val::Num(0.0_f64))) {
-            shadow.push(Violation::new("amount", "non_negative", "amount must not be negative"));
+            refuse.push(Violation::new("amount", "non_negative", "amount must not be negative"));
         }
         GuardOutcome { refuse, shadow }
     }

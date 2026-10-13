@@ -56,7 +56,7 @@ impl backbone_core::write_guard::WriteGuard<MaintenanceRequest> for MaintenanceR
         };
         let row = &row;
         let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
-        let mut shadow = Vec::new();
+        let shadow = Vec::new();
         let mut refuse = Vec::new();
         // `name_required` (@required on MaintenanceRequest.name)
         if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "name")), r::not(r::is_empty(r::trim(r::field(row, "name")))))) {
@@ -64,11 +64,11 @@ impl backbone_core::write_guard::WriteGuard<MaintenanceRequest> for MaintenanceR
         }
         // `name_max_length` (@length(max=500) on MaintenanceRequest.name)
         if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::le(r::length(r::field(row, "name")), r::Val::Num(500.0_f64))) {
-            shadow.push(Violation::new("name", "max_length", "name must be at most 500 characters").with_param("max", 500_i64));
+            refuse.push(Violation::new("name", "max_length", "name must be at most 500 characters").with_param("max", 500_i64));
         }
         // `duration_non_negative` (@non_negative on MaintenanceRequest.duration)
         if (create || (update && r::changed(old.as_ref(), row, &["duration"]))) && !r::holds(&r::ge(r::field(row, "duration"), r::Val::Num(0.0_f64))) {
-            shadow.push(Violation::new("duration", "non_negative", "duration must not be negative"));
+            refuse.push(Violation::new("duration", "non_negative", "duration must not be negative"));
         }
         // `stage_id_required` (@required on MaintenanceRequest.stage_id)
         if (create || (update && r::changed(old.as_ref(), row, &["stage_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "stage_id")), r::not(r::is_empty(r::trim(r::field(row, "stage_id")))))) {
@@ -76,7 +76,7 @@ impl backbone_core::write_guard::WriteGuard<MaintenanceRequest> for MaintenanceR
         }
         // `G-MT3` (convergence_guards.hook.yaml:32)
         if (create || update) && !r::holds(&r::ge(r::field(row, "repeat_interval"), r::Val::Num(1.0_f64))) {
-            shadow.push(Violation::new("repeat_interval", "request_repeat_interval_below_one", "A recurrence step must be at least one unit."));
+            refuse.push(Violation::new("repeat_interval", "request_repeat_interval_below_one", "A recurrence step must be at least one unit."));
         }
         GuardOutcome { refuse, shadow }
     }
