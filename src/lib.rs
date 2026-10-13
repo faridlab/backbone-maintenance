@@ -44,9 +44,6 @@ pub use application::service::MaintenanceStageService;
 pub use application::service::MaintenanceVisitService;
 pub use application::service::MaintenanceVisitPartService;
 
-// Re-exports - Workflows
-pub use application::workflows::*;
-
 // <<< CUSTOM
 // Committed write-side contract: the engine + its port traits, re-exported so a consuming service
 // reaches them as `maintenance::GlPostSink` etc. rather than deep module paths.
