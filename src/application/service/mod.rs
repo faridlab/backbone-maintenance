@@ -20,6 +20,10 @@ pub use maintenance_stage_service::MaintenanceStageService;
 pub use maintenance_visit_service::MaintenanceVisitService;
 pub use maintenance_visit_part_service::MaintenanceVisitPartService;
 pub use maintenance_request_service::MaintenanceRequestRowRules;
+pub use maintenance_schedule_service::MaintenanceScheduleRowRules;
+pub use maintenance_stage_service::MaintenanceStageRowRules;
+pub use maintenance_visit_service::MaintenanceVisitRowRules;
+pub use maintenance_visit_part_service::MaintenanceVisitPartRowRules;
 
 // This directory's extension (hand-written; ADR-0031).
 include!("mod.ext.rs");

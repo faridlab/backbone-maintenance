@@ -32,3 +32,53 @@ pub type MaintenanceVisitService = GenericCrudService<
     MaintenanceVisitRepository,
 >;
 
+/// The rules the schema declares for MaintenanceVisit, checked against the row a create or update
+/// would store. The generated build attaches it to [`MaintenanceVisitService`]. A refusing rule's
+/// break answers 422; a rule in shadow is logged under `backbone::write_guard` and the
+/// write goes ahead.
+pub struct MaintenanceVisitRowRules;
+
+#[async_trait::async_trait]
+impl backbone_core::write_guard::WriteGuard<MaintenanceVisit> for MaintenanceVisitRowRules {
+    async fn check(
+        &self,
+        ctx: &backbone_core::write_guard::WriteCtx<'_, MaintenanceVisit>,
+    ) -> backbone_core::write_guard::GuardOutcome {
+        use backbone_core::row_rule as r;
+        use backbone_core::violation::Violation;
+        use backbone_core::write_guard::{GuardOutcome, WriteKind};
+        let (create, update) = (ctx.kind == WriteKind::Create, ctx.kind == WriteKind::Update);
+        let Some(after) = ctx.after.filter(|_| create || update) else {
+            return GuardOutcome::allow();
+        };
+        let Ok(row) = serde_json::to_value(after) else {
+            return GuardOutcome::allow();
+        };
+        let row = &row;
+        let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
+        let mut shadow = Vec::new();
+        let mut refuse = Vec::new();
+        // `asset_id_required` (@required on MaintenanceVisit.asset_id)
+        if (create || (update && r::changed(old.as_ref(), row, &["asset_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "asset_id")), r::not(r::is_empty(r::trim(r::field(row, "asset_id")))))) {
+            refuse.push(Violation::new("asset_id", "required", "asset_id is required"));
+        }
+        // `labor_cost_non_negative` (@non_negative on MaintenanceVisit.labor_cost)
+        if (create || (update && r::changed(old.as_ref(), row, &["labor_cost"]))) && !r::holds(&r::ge(r::field(row, "labor_cost"), r::Val::Num(0.0_f64))) {
+            shadow.push(Violation::new("labor_cost", "non_negative", "labor_cost must not be negative"));
+        }
+        // `parts_cost_non_negative` (@non_negative on MaintenanceVisit.parts_cost)
+        if (create || (update && r::changed(old.as_ref(), row, &["parts_cost"]))) && !r::holds(&r::ge(r::field(row, "parts_cost"), r::Val::Num(0.0_f64))) {
+            shadow.push(Violation::new("parts_cost", "non_negative", "parts_cost must not be negative"));
+        }
+        // `total_cost_non_negative` (@non_negative on MaintenanceVisit.total_cost)
+        if (create || (update && r::changed(old.as_ref(), row, &["total_cost"]))) && !r::holds(&r::ge(r::field(row, "total_cost"), r::Val::Num(0.0_f64))) {
+            shadow.push(Violation::new("total_cost", "non_negative", "total_cost must not be negative"));
+        }
+        // `notes_max_length` (@length(max=2000) on MaintenanceVisit.notes)
+        if (create || (update && r::changed(old.as_ref(), row, &["notes"]))) && !r::holds(&r::le(r::length(r::field(row, "notes")), r::Val::Num(2000.0_f64))) {
+            shadow.push(Violation::new("notes", "max_length", "notes must be at most 2000 characters").with_param("max", 2000_i64));
+        }
+        GuardOutcome { refuse, shadow }
+    }
+}
+

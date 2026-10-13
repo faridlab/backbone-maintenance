@@ -44,9 +44,6 @@ pub use application::service::MaintenanceStageService;
 pub use application::service::MaintenanceVisitService;
 pub use application::service::MaintenanceVisitPartService;
 
-// Re-exports - Validation
-pub use application::validator::{ValidationError, ValidationResult};
-
 // Re-exports - Workflows
 pub use application::workflows::*;
 
@@ -226,19 +223,19 @@ impl MaintenanceModuleBuilder {
 
         // MaintenanceSchedule service
         let maintenance_schedule_repository = Arc::new(MaintenanceScheduleRepository::new(db_pool.clone()));
-        let maintenance_schedule_service = Arc::new(MaintenanceScheduleService::with_repository(maintenance_schedule_repository.clone()));
+        let maintenance_schedule_service = Arc::new(MaintenanceScheduleService::with_repository(maintenance_schedule_repository.clone()).with_guard(Arc::new(crate::application::service::MaintenanceScheduleRowRules)));
 
         // MaintenanceStage service
         let maintenance_stage_repository = Arc::new(MaintenanceStageRepository::new(db_pool.clone()));
-        let maintenance_stage_service = Arc::new(MaintenanceStageService::with_repository(maintenance_stage_repository.clone()));
+        let maintenance_stage_service = Arc::new(MaintenanceStageService::with_repository(maintenance_stage_repository.clone()).with_guard(Arc::new(crate::application::service::MaintenanceStageRowRules)));
 
         // MaintenanceVisit service
         let maintenance_visit_repository = Arc::new(MaintenanceVisitRepository::new(db_pool.clone()));
-        let maintenance_visit_service = Arc::new(MaintenanceVisitService::with_repository(maintenance_visit_repository.clone()));
+        let maintenance_visit_service = Arc::new(MaintenanceVisitService::with_repository(maintenance_visit_repository.clone()).with_guard(Arc::new(crate::application::service::MaintenanceVisitRowRules)));
 
         // MaintenanceVisitPart service
         let maintenance_visit_part_repository = Arc::new(MaintenanceVisitPartRepository::new(db_pool.clone()));
-        let maintenance_visit_part_service = Arc::new(MaintenanceVisitPartService::with_repository(maintenance_visit_part_repository.clone()));
+        let maintenance_visit_part_service = Arc::new(MaintenanceVisitPartService::with_repository(maintenance_visit_part_repository.clone()).with_guard(Arc::new(crate::application::service::MaintenanceVisitPartRowRules)));
 
         // <<< CUSTOM
         let query: Arc<dyn crate::exports::MaintenanceQueryService> =

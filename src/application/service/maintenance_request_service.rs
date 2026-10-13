@@ -32,9 +32,10 @@ pub type MaintenanceRequestService = GenericCrudService<
     MaintenanceRequestRepository,
 >;
 
-/// The row rules the schema declares for MaintenanceRequest, checked against the row a create or
-/// update would store. The generated build attaches it to [`MaintenanceRequestService`]. Every rule
-/// runs in shadow: a break is logged under `backbone::write_guard` and the write goes ahead.
+/// The rules the schema declares for MaintenanceRequest, checked against the row a create or update
+/// would store. The generated build attaches it to [`MaintenanceRequestService`]. A refusing rule's
+/// break answers 422; a rule in shadow is logged under `backbone::write_guard` and the
+/// write goes ahead.
 pub struct MaintenanceRequestRowRules;
 
 #[async_trait::async_trait]
@@ -54,12 +55,30 @@ impl backbone_core::write_guard::WriteGuard<MaintenanceRequest> for MaintenanceR
             return GuardOutcome::allow();
         };
         let row = &row;
+        let old = ctx.before.and_then(|b| serde_json::to_value(b).ok());
         let mut shadow = Vec::new();
+        let mut refuse = Vec::new();
+        // `name_required` (@required on MaintenanceRequest.name)
+        if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "name")), r::not(r::is_empty(r::trim(r::field(row, "name")))))) {
+            refuse.push(Violation::new("name", "required", "name is required"));
+        }
+        // `name_max_length` (@length(max=500) on MaintenanceRequest.name)
+        if (create || (update && r::changed(old.as_ref(), row, &["name"]))) && !r::holds(&r::le(r::length(r::field(row, "name")), r::Val::Num(500.0_f64))) {
+            shadow.push(Violation::new("name", "max_length", "name must be at most 500 characters").with_param("max", 500_i64));
+        }
+        // `duration_non_negative` (@non_negative on MaintenanceRequest.duration)
+        if (create || (update && r::changed(old.as_ref(), row, &["duration"]))) && !r::holds(&r::ge(r::field(row, "duration"), r::Val::Num(0.0_f64))) {
+            shadow.push(Violation::new("duration", "non_negative", "duration must not be negative"));
+        }
+        // `stage_id_required` (@required on MaintenanceRequest.stage_id)
+        if (create || (update && r::changed(old.as_ref(), row, &["stage_id"]))) && !r::holds(&r::and(r::is_not_null(r::field(row, "stage_id")), r::not(r::is_empty(r::trim(r::field(row, "stage_id")))))) {
+            refuse.push(Violation::new("stage_id", "required", "stage_id is required"));
+        }
         // `G-MT3` (convergence_guards.hook.yaml:32)
         if (create || update) && !r::holds(&r::ge(r::field(row, "repeat_interval"), r::Val::Num(1.0_f64))) {
             shadow.push(Violation::new("repeat_interval", "request_repeat_interval_below_one", "A recurrence step must be at least one unit."));
         }
-        GuardOutcome { refuse: Vec::new(), shadow }
+        GuardOutcome { refuse, shadow }
     }
 }
 
