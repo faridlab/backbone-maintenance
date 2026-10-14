@@ -216,23 +216,23 @@ impl MaintenanceModuleBuilder {
 
         // MaintenanceRequest service
         let maintenance_request_repository = Arc::new(MaintenanceRequestRepository::new(db_pool.clone()));
-        let maintenance_request_service = Arc::new(MaintenanceRequestService::with_repository(maintenance_request_repository.clone()).with_guard(Arc::new(crate::application::service::MaintenanceRequestRowRules)));
+        let maintenance_request_service = Arc::new(crate::application::service::build_maintenance_request_service(maintenance_request_repository.clone()));
 
         // MaintenanceSchedule service
         let maintenance_schedule_repository = Arc::new(MaintenanceScheduleRepository::new(db_pool.clone()));
-        let maintenance_schedule_service = Arc::new(MaintenanceScheduleService::with_repository(maintenance_schedule_repository.clone()).with_guard(Arc::new(crate::application::service::MaintenanceScheduleRowRules)));
+        let maintenance_schedule_service = Arc::new(crate::application::service::build_maintenance_schedule_service(maintenance_schedule_repository.clone()));
 
         // MaintenanceStage service
         let maintenance_stage_repository = Arc::new(MaintenanceStageRepository::new(db_pool.clone()));
-        let maintenance_stage_service = Arc::new(MaintenanceStageService::with_repository(maintenance_stage_repository.clone()).with_guard(Arc::new(crate::application::service::MaintenanceStageRowRules)));
+        let maintenance_stage_service = Arc::new(crate::application::service::build_maintenance_stage_service(maintenance_stage_repository.clone()));
 
         // MaintenanceVisit service
         let maintenance_visit_repository = Arc::new(MaintenanceVisitRepository::new(db_pool.clone()));
-        let maintenance_visit_service = Arc::new(MaintenanceVisitService::with_repository(maintenance_visit_repository.clone()).with_guard(Arc::new(crate::application::service::MaintenanceVisitRowRules)));
+        let maintenance_visit_service = Arc::new(crate::application::service::build_maintenance_visit_service(maintenance_visit_repository.clone()));
 
         // MaintenanceVisitPart service
         let maintenance_visit_part_repository = Arc::new(MaintenanceVisitPartRepository::new(db_pool.clone()));
-        let maintenance_visit_part_service = Arc::new(MaintenanceVisitPartService::with_repository(maintenance_visit_part_repository.clone()).with_guard(Arc::new(crate::application::service::MaintenanceVisitPartRowRules)));
+        let maintenance_visit_part_service = Arc::new(crate::application::service::build_maintenance_visit_part_service(maintenance_visit_part_repository.clone()));
 
         // <<< CUSTOM
         let query: Arc<dyn crate::exports::MaintenanceQueryService> =

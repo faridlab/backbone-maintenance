@@ -25,5 +25,45 @@ pub use maintenance_stage_service::MaintenanceStageRowRules;
 pub use maintenance_visit_service::MaintenanceVisitRowRules;
 pub use maintenance_visit_part_service::MaintenanceVisitPartRowRules;
 
+/// A `MaintenanceRequestService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_maintenance_request_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::MaintenanceRequestRepository>,
+) -> MaintenanceRequestService {
+    MaintenanceRequestService::with_repository(repository).with_guard(std::sync::Arc::new(MaintenanceRequestRowRules))
+}
+
+/// A `MaintenanceScheduleService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_maintenance_schedule_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::MaintenanceScheduleRepository>,
+) -> MaintenanceScheduleService {
+    MaintenanceScheduleService::with_repository(repository).with_guard(std::sync::Arc::new(MaintenanceScheduleRowRules))
+}
+
+/// A `MaintenanceStageService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_maintenance_stage_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::MaintenanceStageRepository>,
+) -> MaintenanceStageService {
+    MaintenanceStageService::with_repository(repository).with_guard(std::sync::Arc::new(MaintenanceStageRowRules))
+}
+
+/// A `MaintenanceVisitService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_maintenance_visit_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::MaintenanceVisitRepository>,
+) -> MaintenanceVisitService {
+    MaintenanceVisitService::with_repository(repository).with_guard(std::sync::Arc::new(MaintenanceVisitRowRules))
+}
+
+/// A `MaintenanceVisitPartService` over `repository` with its write guard attached: the way to build it, so its writes are
+/// served only with the rules the schema declares.
+pub fn build_maintenance_visit_part_service(
+    repository: std::sync::Arc<crate::infrastructure::persistence::MaintenanceVisitPartRepository>,
+) -> MaintenanceVisitPartService {
+    MaintenanceVisitPartService::with_repository(repository).with_guard(std::sync::Arc::new(MaintenanceVisitPartRowRules))
+}
+
 // This directory's extension (hand-written; ADR-0031).
 include!("mod.ext.rs");

@@ -72,13 +72,13 @@ rules:
   G-MT6:
     when: [soft_delete]
     entity: MaintenanceStage
-    condition: "no live maintenance_requests row (metadata->>'deleted_at' IS NULL) references the stage"
+    condition: "count(MaintenanceRequest, stage_id == $this.id && metadata.deleted_at == null) == 0"
     message: "A stage referenced by live requests cannot be deleted."
     code: maintenance_stage_in_use
     severity: error
     enforcement: db
     note: "The honest G-MT4 analog (G-MT4 itself guards an equipment CATEGORY delete, and no category entity exists this pass). Hard DELETE is blocked by the stage FK (ON DELETE RESTRICT); SOFT delete (metadata->>'deleted_at' set) of a referenced stage is blocked by a BEFORE UPDATE trigger on maintenance_stages raising maintenance_stage_in_use."
-    justification: "PARTLY: the maintenance_stages_soft_delete_guard trigger refuses soft-deleting a stage with live requests and the stage foreign key refuses a hard delete, but a create or transition racing the delete can still land a request on the stage, the refusal answers 500 rather than maintenance_stage_in_use, and the guard sees requests of every unit only when its owner bypasses row security."
+    justification: "Compiled into the generated delete guard, so a soft delete of a stage still referenced by a live request is refused with maintenance_stage_in_use before the write; the maintenance_stages_soft_delete_guard trigger refuses it at the database too, and the stage foreign key refuses a hard delete. A create or transition racing the delete can still land a request on the stage."
 
   G-MT_STAGE_FK:
     when: [create, update]

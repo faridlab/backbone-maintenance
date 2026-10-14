@@ -47,6 +47,18 @@ impl backbone_core::write_guard::WriteGuard<MaintenanceStage> for MaintenanceSta
         use backbone_core::row_rule as r;
         use backbone_core::violation::Violation;
         use backbone_core::write_guard::{GuardOutcome, WriteKind};
+        if matches!(ctx.kind, WriteKind::Delete | WriteKind::HardDelete) {
+            let Some(Ok(old)) = ctx.before.map(serde_json::to_value) else {
+                return GuardOutcome::allow();
+            };
+            let mut refuse = Vec::new();
+            let shadow = Vec::new();
+            // `G-MT6` (convergence_guards.hook.yaml:72)
+            if !r::holds(&r::eq(r::referencing("SELECT count(*) FROM maintenance.maintenance_requests WHERE \"stage_id\" = $1::uuid AND ((\"metadata\"->>'deleted_at') IS NULL)", r::field(&old, "id")).await, r::Val::Num(0.0_f64))) {
+                refuse.push(Violation::new("", "maintenance_stage_in_use", "A stage referenced by live requests cannot be deleted."));
+            }
+            return GuardOutcome { refuse, shadow };
+        }
         let (create, update) = (ctx.kind == WriteKind::Create, ctx.kind == WriteKind::Update);
         let Some(after) = ctx.after.filter(|_| create || update) else {
             return GuardOutcome::allow();
