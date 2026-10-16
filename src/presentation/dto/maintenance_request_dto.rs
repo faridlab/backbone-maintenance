@@ -57,8 +57,6 @@ pub struct CreateMaintenanceRequestDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(alias = "stage_id")]
     pub stage_id: Uuid,
-    #[serde(alias = "kanban_state")]
-    pub kanban_state: RequestKanbanState,
     pub priority: RequestPriority,
     #[serde(alias = "maintenance_type")]
     pub maintenance_type: MaintenanceType,
@@ -369,7 +367,7 @@ impl From<CreateMaintenanceRequestDto> for MaintenanceRequest {
             user_id: dto.user_id,
             asset_id: dto.asset_id,
             stage_id: dto.stage_id,
-            kanban_state: dto.kanban_state,
+            kanban_state: RequestKanbanState::Normal,
             priority: dto.priority,
             maintenance_type: dto.maintenance_type,
             recurring: dto.recurring,
