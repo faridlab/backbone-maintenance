@@ -323,6 +323,7 @@ impl MaintenanceRequestWriteService {
             .transition_cas(
                 &mut tx,
                 request_id,
+                from_stage_id,
                 target.id,
                 kanban_state_override.as_ref().map(|k| k.to_string()).as_deref(),
             )

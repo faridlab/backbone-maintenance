@@ -313,8 +313,10 @@ impl MaintenanceRequestRepository {
         Ok(row)
     }
 
-    /// The stage-transition CAS: move the request to `target_stage_id` (optionally setting
-    /// `kanban_state` in the same statement) iff it is live and not already there. The G-MT5 trigger
+    /// The stage-transition CAS: move the request from `from_stage_id`, the stage the caller read,
+    /// to `target_stage_id` (optionally setting `kanban_state` in the same statement) iff it is live
+    /// and still on that stage. Pinning the old stage keeps the caller's done-ness decision true for
+    /// the row it writes: a concurrent move makes this match nothing instead of closing unseen. The G-MT5 trigger
     /// applies the kanban reset + close_date sync on this same statement. Returns the rows affected —
     /// 0 means the request was already at the target (or raced), and the caller must re-read.
     ///
@@ -324,6 +326,7 @@ impl MaintenanceRequestRepository {
         &self,
         conn: &mut sqlx::PgConnection,
         request_id: Uuid,
+        from_stage_id: Uuid,
         target_stage_id: Uuid,
         kanban_override: Option<&str>,
     ) -> Result<u64, sqlx::Error> {
@@ -331,22 +334,24 @@ impl MaintenanceRequestRepository {
             Some(k) => sqlx::query(
                 r#"UPDATE maintenance.maintenance_requests
                    SET stage_id = $2, kanban_state = $3::request_kanban_state
-                   WHERE id = $1 AND stage_id IS DISTINCT FROM $2
+                   WHERE id = $1 AND stage_id = $4 AND stage_id IS DISTINCT FROM $2
                      AND (metadata->>'deleted_at') IS NULL"#,
             )
             .bind(request_id)
             .bind(target_stage_id)
             .bind(k)
+            .bind(from_stage_id)
             .execute(conn)
             .await?,
             None => sqlx::query(
                 r#"UPDATE maintenance.maintenance_requests
                    SET stage_id = $2
-                   WHERE id = $1 AND stage_id IS DISTINCT FROM $2
+                   WHERE id = $1 AND stage_id = $3 AND stage_id IS DISTINCT FROM $2
                      AND (metadata->>'deleted_at') IS NULL"#,
             )
             .bind(request_id)
             .bind(target_stage_id)
+            .bind(from_stage_id)
             .execute(conn)
             .await?,
         };

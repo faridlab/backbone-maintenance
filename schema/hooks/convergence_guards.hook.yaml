@@ -67,7 +67,7 @@ rules:
     code: maintenance_recurring_close_requires_service_verb
     severity: error
     enforcement: both
-    justification: "PARTLY: the maintenance_requests_stage_transition trigger refuses a raw close of a recurring preventive request and the transition verb spawns the successor under the managed flag, but the verb decides done-ness from an unlocked read and its compare-and-set does not pin the old stage, so a concurrent stage move can close without a successor; a request created straight into a done stage, or left on a stage whose done flag is later set, never spawns; and an explicit kanban state equal to the current one is still reset."
+    justification: "PARTLY: the maintenance_requests_stage_transition trigger refuses a raw close of a recurring preventive request and the transition verb spawns the successor under the managed flag, and its compare-and-set moves only from the stage it read, so a concurrent stage move makes the close land nowhere instead of closing on a decision made for another stage (tests/request_family_probes.rs p_pinned); still open: a request created straight into a done stage, or left on a stage whose done flag is later set, never spawns; and an explicit kanban state equal to the current one is still reset."
 
   G-MT6:
     when: [soft_delete]

@@ -760,3 +760,35 @@ async fn p13_visit_engine_still_completes_beside_the_request_family() {
     assert_eq!(field_text(&pool, req, "stage_id").await, stage_new().to_string());
     assert_eq!(field_text(&pool, req, "successor_request_id").await, "<null>");
 }
+
+// ── the transition is pinned to the stage it read ─────────────────────────────
+
+#[tokio::test]
+async fn p_pinned_a_transition_moves_only_from_the_stage_it_read() {
+    let pool = pool().await;
+    ensure_stages(&pool).await;
+    let start = Utc.with_ymd_and_hms(2026, 3, 15, 8, 0, 0).unwrap();
+    let id = svc(&pool).create_request(preventive(Uuid::new_v4(), start)).await.expect("create");
+
+    // A concurrent move under way: the request held and moved to Progress, not yet committed.
+    let mut other = pool.begin().await.unwrap();
+    sqlx::query("SELECT id FROM maintenance.maintenance_requests WHERE id = $1 FOR UPDATE")
+        .bind(id).execute(&mut *other).await.unwrap();
+    sqlx::query("UPDATE maintenance.maintenance_requests SET stage_id = $2 WHERE id = $1")
+        .bind(id).bind(stage_progress()).execute(&mut *other).await.unwrap();
+
+    let close = tokio::spawn({
+        let pool = pool.clone();
+        async move {
+            let sink = CapturingSink::new();
+            svc(&pool).transition_request(id, stage_repaired(), None, &sink).await
+        }
+    });
+    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+    other.commit().await.unwrap();
+    let out = close.await.unwrap().expect("transition answers");
+
+    assert!(out.already, "the request left the stage the close read: the close lands nowhere");
+    assert_eq!(field_text(&pool, id, "stage_id").await, stage_progress().to_string());
+    assert_eq!(successor_count(&pool, id).await, 0, "nothing closed, nothing spawned");
+}
