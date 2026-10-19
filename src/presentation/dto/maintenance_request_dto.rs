@@ -39,7 +39,7 @@ pub struct CreateMaintenanceRequestDto {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[cfg_attr(feature = "openapi", schema(example = "2024-01-01"))]
-    #[serde(alias = "request_date")]
+    #[serde(default = "default_create_maintenance_request_request_date", alias = "request_date")]
     pub request_date: NaiveDate,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "schedule_date")]
     pub schedule_date: Option<DateTime<Utc>>,
@@ -47,6 +47,7 @@ pub struct CreateMaintenanceRequestDto {
     pub schedule_end: Option<DateTime<Utc>>,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "close_date")]
     pub close_date: Option<NaiveDate>,
+    #[serde(default)]
     pub duration: Decimal,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "owner_user_id")]
     pub owner_user_id: Option<Uuid>,
@@ -58,16 +59,17 @@ pub struct CreateMaintenanceRequestDto {
     #[serde(alias = "stage_id")]
     pub stage_id: Uuid,
     pub priority: RequestPriority,
-    #[serde(alias = "maintenance_type")]
+    #[serde(default = "default_create_maintenance_request_maintenance_type", alias = "maintenance_type")]
     pub maintenance_type: MaintenanceType,
     #[cfg_attr(feature = "openapi", schema(example = true))]
+    #[serde(default)]
     pub recurring: bool,
     #[cfg_attr(feature = "openapi", schema(example = 42))]
-    #[serde(alias = "repeat_interval")]
+    #[serde(default = "default_create_maintenance_request_repeat_interval", alias = "repeat_interval")]
     pub repeat_interval: i32,
-    #[serde(alias = "repeat_unit")]
+    #[serde(default = "default_create_maintenance_request_repeat_unit", alias = "repeat_unit")]
     pub repeat_unit: RepeatUnit,
-    #[serde(alias = "repeat_type")]
+    #[serde(default = "default_create_maintenance_request_repeat_type", alias = "repeat_type")]
     pub repeat_type: RepeatType,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "repeat_until")]
     pub repeat_until: Option<NaiveDate>,
@@ -75,6 +77,26 @@ pub struct CreateMaintenanceRequestDto {
     pub successor_request_id: Option<Uuid>,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "successor_of_request_id")]
     pub successor_of_request_id: Option<Uuid>,
+}
+
+fn default_create_maintenance_request_request_date() -> NaiveDate {
+    Utc::now().date_naive()
+}
+
+fn default_create_maintenance_request_maintenance_type() -> MaintenanceType {
+    MaintenanceType::Corrective
+}
+
+fn default_create_maintenance_request_repeat_interval() -> i32 {
+    1
+}
+
+fn default_create_maintenance_request_repeat_unit() -> RepeatUnit {
+    RepeatUnit::Week
+}
+
+fn default_create_maintenance_request_repeat_type() -> RepeatType {
+    RepeatType::Forever
 }
 
 // =============================================================================
@@ -149,25 +171,25 @@ pub struct PatchMaintenanceRequestDto {
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<String>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub description: Option<Option<String>>,
     #[cfg_attr(feature = "openapi", schema(example = "2024-01-01"))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "request_date")]
     pub request_date: Option<NaiveDate>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "schedule_date")]
-    pub schedule_date: Option<DateTime<Utc>>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "schedule_end")]
-    pub schedule_end: Option<DateTime<Utc>>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "close_date")]
-    pub close_date: Option<NaiveDate>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "schedule_date")]
+    pub schedule_date: Option<Option<DateTime<Utc>>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "schedule_end")]
+    pub schedule_end: Option<Option<DateTime<Utc>>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "close_date")]
+    pub close_date: Option<Option<NaiveDate>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub duration: Option<Decimal>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "owner_user_id")]
-    pub owner_user_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "user_id")]
-    pub user_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "asset_id")]
-    pub asset_id: Option<Uuid>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "owner_user_id")]
+    pub owner_user_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "user_id")]
+    pub user_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "asset_id")]
+    pub asset_id: Option<Option<Uuid>>,
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "stage_id")]
     pub stage_id: Option<Uuid>,
@@ -187,12 +209,12 @@ pub struct PatchMaintenanceRequestDto {
     pub repeat_unit: Option<RepeatUnit>,
     #[serde(skip_serializing_if = "Option::is_none", alias = "repeat_type")]
     pub repeat_type: Option<RepeatType>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "repeat_until")]
-    pub repeat_until: Option<NaiveDate>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "successor_request_id")]
-    pub successor_request_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "successor_of_request_id")]
-    pub successor_of_request_id: Option<Uuid>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "repeat_until")]
+    pub repeat_until: Option<Option<NaiveDate>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "successor_request_id")]
+    pub successor_request_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "successor_of_request_id")]
+    pub successor_of_request_id: Option<Option<Uuid>>,
 }
 
 impl PatchMaintenanceRequestDto {
@@ -444,12 +466,4 @@ impl backbone_core::ApplyUpdateDto<UpdateMaintenanceRequestDto> for MaintenanceR
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to MaintenanceRequest here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

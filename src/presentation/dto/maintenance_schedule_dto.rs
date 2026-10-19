@@ -40,7 +40,12 @@ pub struct CreateMaintenanceScheduleDto {
     #[cfg_attr(feature = "openapi", schema(example = "2024-01-01"))]
     #[serde(alias = "next_due_date")]
     pub next_due_date: NaiveDate,
+    #[serde(default = "default_create_maintenance_schedule_status")]
     pub status: MaintenanceScheduleStatus,
+}
+
+fn default_create_maintenance_schedule_status() -> MaintenanceScheduleStatus {
+    MaintenanceScheduleStatus::Active
 }
 
 // =============================================================================
@@ -265,12 +270,4 @@ impl backbone_core::ApplyUpdateDto<UpdateMaintenanceScheduleDto> for Maintenance
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to MaintenanceSchedule here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

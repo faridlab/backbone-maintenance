@@ -36,8 +36,9 @@ pub struct CreateMaintenanceVisitDto {
     pub asset_id: Uuid,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "schedule_id")]
     pub schedule_id: Option<Uuid>,
-    #[serde(alias = "maintenance_type")]
+    #[serde(default = "default_create_maintenance_visit_maintenance_type", alias = "maintenance_type")]
     pub maintenance_type: MaintenanceType,
+    #[serde(default = "default_create_maintenance_visit_status")]
     pub status: VisitStatus,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "warehouse_id")]
     pub warehouse_id: Option<Uuid>,
@@ -48,11 +49,11 @@ pub struct CreateMaintenanceVisitDto {
     pub scheduled_date: NaiveDate,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "performed_date")]
     pub performed_date: Option<NaiveDate>,
-    #[serde(alias = "labor_cost")]
+    #[serde(default, alias = "labor_cost")]
     pub labor_cost: Decimal,
-    #[serde(alias = "parts_cost")]
+    #[serde(default, alias = "parts_cost")]
     pub parts_cost: Decimal,
-    #[serde(alias = "total_cost")]
+    #[serde(default, alias = "total_cost")]
     pub total_cost: Decimal,
     #[serde(default, skip_serializing_if = "Option::is_none", alias = "maintenance_expense_account_id")]
     pub maintenance_expense_account_id: Option<Uuid>,
@@ -66,6 +67,14 @@ pub struct CreateMaintenanceVisitDto {
     pub accounting_post_id: Option<Uuid>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub notes: Option<String>,
+}
+
+fn default_create_maintenance_visit_maintenance_type() -> MaintenanceType {
+    MaintenanceType::Preventive
+}
+
+fn default_create_maintenance_visit_status() -> VisitStatus {
+    VisitStatus::Planned
 }
 
 // =============================================================================
@@ -123,29 +132,29 @@ pub struct PatchMaintenanceVisitDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "asset_id")]
     pub asset_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "schedule_id")]
-    pub schedule_id: Option<Uuid>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "schedule_id")]
+    pub schedule_id: Option<Option<Uuid>>,
     #[serde(skip_serializing_if = "Option::is_none", alias = "maintenance_type")]
     pub maintenance_type: Option<MaintenanceType>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "warehouse_id")]
-    pub warehouse_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "warranty_claim_id")]
-    pub warranty_claim_id: Option<Uuid>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "warehouse_id")]
+    pub warehouse_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "warranty_claim_id")]
+    pub warranty_claim_id: Option<Option<Uuid>>,
     #[cfg_attr(feature = "openapi", schema(example = "2024-01-01"))]
     #[serde(skip_serializing_if = "Option::is_none", alias = "scheduled_date")]
     pub scheduled_date: Option<NaiveDate>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "performed_date")]
-    pub performed_date: Option<NaiveDate>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "performed_date")]
+    pub performed_date: Option<Option<NaiveDate>>,
     #[serde(skip_serializing_if = "Option::is_none", alias = "labor_cost")]
     pub labor_cost: Option<Decimal>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "maintenance_expense_account_id")]
-    pub maintenance_expense_account_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "parts_inventory_account_id")]
-    pub parts_inventory_account_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none", alias = "labor_payable_account_id")]
-    pub labor_payable_account_id: Option<Uuid>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub notes: Option<String>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "maintenance_expense_account_id")]
+    pub maintenance_expense_account_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "parts_inventory_account_id")]
+    pub parts_inventory_account_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option", alias = "labor_payable_account_id")]
+    pub labor_payable_account_id: Option<Option<Uuid>>,
+    #[serde(default, deserialize_with = "crate::presentation::dto::double_option")]
+    pub notes: Option<Option<String>>,
 }
 
 impl PatchMaintenanceVisitDto {
@@ -369,12 +378,4 @@ impl backbone_core::ApplyUpdateDto<UpdateMaintenanceVisitDto> for MaintenanceVis
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to MaintenanceVisit here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

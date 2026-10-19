@@ -307,6 +307,12 @@ impl backbone_core::PersistentEntity for MaintenanceVisit {
     fn write_protected_fields() -> &'static [&'static str] {
         &["status", "parts_cost", "total_cost", "journal_id", "accounting_post_id"]
     }
+    fn references() -> &'static [backbone_core::Reference] {
+        const REFERENCES: &[backbone_core::Reference] = &[
+            backbone_core::Reference::new("schedule_id", "maintenance.maintenance_schedules", "id"),
+        ];
+        REFERENCES
+    }
     fn entity_id(&self) -> String {
         self.id.to_string()
     }

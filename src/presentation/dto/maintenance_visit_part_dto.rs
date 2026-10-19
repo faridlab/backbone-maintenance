@@ -35,9 +35,11 @@ pub struct CreateMaintenanceVisitPartDto {
     #[cfg_attr(feature = "openapi", schema(example = "550e8400-e29b-41d4-a716-446655440000"))]
     #[serde(alias = "item_id")]
     pub item_id: Uuid,
+    #[serde(default)]
     pub quantity: Decimal,
-    #[serde(alias = "unit_cost")]
+    #[serde(default, alias = "unit_cost")]
     pub unit_cost: Decimal,
+    #[serde(default)]
     pub amount: Decimal,
 }
 
@@ -248,12 +250,4 @@ impl backbone_core::ApplyUpdateDto<UpdateMaintenanceVisitPartDto> for Maintenanc
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to MaintenanceVisitPart here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

@@ -31,11 +31,18 @@ pub struct CreateMaintenanceStageDto {
     #[cfg_attr(feature = "openapi", schema(example = "example"))]
     pub name: String,
     #[cfg_attr(feature = "openapi", schema(example = 42))]
+    #[serde(default = "default_create_maintenance_stage_sequence")]
     pub sequence: i32,
     #[cfg_attr(feature = "openapi", schema(example = true))]
+    #[serde(default)]
     pub fold: bool,
     #[cfg_attr(feature = "openapi", schema(example = true))]
+    #[serde(default)]
     pub done: bool,
+}
+
+fn default_create_maintenance_stage_sequence() -> i32 {
+    20
 }
 
 // =============================================================================
@@ -249,12 +256,4 @@ impl backbone_core::ApplyUpdateDto<UpdateMaintenanceStageDto> for MaintenanceSta
         Ok(self)
     }
 }
-
-// =============================================================================
-// Custom DTOs
-// =============================================================================
-
-// Add custom DTOs specific to MaintenanceStage here.
-// This section will be preserved during regeneration.
-// >>> END CUSTOM DTOs
 

@@ -325,6 +325,12 @@ impl backbone_core::PersistentEntity for MaintenanceRequest {
     fn write_protected_fields() -> &'static [&'static str] {
         &["kanban_state", "priority"]
     }
+    fn references() -> &'static [backbone_core::Reference] {
+        const REFERENCES: &[backbone_core::Reference] = &[
+            backbone_core::Reference::new("stage_id", "maintenance.maintenance_stages", "id"),
+        ];
+        REFERENCES
+    }
     fn entity_id(&self) -> String {
         self.id.to_string()
     }

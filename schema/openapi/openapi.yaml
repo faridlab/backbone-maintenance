@@ -45,30 +45,6 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-    post:
-      tags:
-        - MaintenanceRequests
-      summary: Create MaintenanceRequest
-      description: Create a new MaintenanceRequest
-      operationId: createMaintenanceRequest
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateMaintenanceRequestRequest'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MaintenanceRequest'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
   /api/v1/maintenance/maintenance_requests/{id}:
     parameters:
       - $ref: '#/components/parameters/IdParam'
@@ -88,181 +64,6 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-    put:
-      tags:
-        - MaintenanceRequests
-      summary: Update MaintenanceRequest (full)
-      operationId: updateMaintenanceRequest
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateMaintenanceRequestRequest'
-      responses:
-        '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MaintenanceRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-    patch:
-      tags:
-        - MaintenanceRequests
-      summary: Update MaintenanceRequest (partial)
-      operationId: patchMaintenanceRequest
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchMaintenanceRequestRequest'
-      responses:
-        '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MaintenanceRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-    delete:
-      tags:
-        - MaintenanceRequests
-      summary: Delete MaintenanceRequest (soft)
-      operationId: deleteMaintenanceRequest
-      responses:
-        '204':
-          description: Deleted
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/v1/maintenance/maintenance_requests/bulk:
-    post:
-      tags:
-        - MaintenanceRequests
-      summary: Bulk create MaintenanceRequests
-      operationId: bulkCreateMaintenanceRequests
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/CreateMaintenanceRequestRequest'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/MaintenanceRequest'
-    put:
-      tags:
-        - MaintenanceRequests
-      summary: Bulk update MaintenanceRequests (full, atomic)
-      operationId: bulkUpdateMaintenanceRequests
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                allOf:
-                  - type: object
-                    required: [id]
-                    properties:
-                      id:
-                        type: string
-                  - $ref: '#/components/schemas/UpdateMaintenanceRequestRequest'
-      responses:
-        '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MaintenanceRequestBulkResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-    patch:
-      tags:
-        - MaintenanceRequests
-      summary: Bulk partial-update MaintenanceRequests (atomic)
-      operationId: bulkPatchMaintenanceRequests
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              oneOf:
-                - type: object
-                  required: [ids, patch]
-                  properties:
-                    ids:
-                      type: array
-                      items: { type: string }
-                    patch:
-                      type: object
-                      additionalProperties: true
-                - type: object
-                  required: [items]
-                  properties:
-                    items:
-                      type: array
-                      items:
-                        type: object
-                        required: [id, patch]
-                        properties:
-                          id: { type: string }
-                          patch: { type: object, additionalProperties: true }
-      responses:
-        '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MaintenanceRequestBulkResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-
-  /api/v1/maintenance/maintenance_requests/upsert:
-    post:
-      tags:
-        - MaintenanceRequests
-      summary: Upsert MaintenanceRequest
-      operationId: upsertMaintenanceRequest
-      parameters:
-        - name: key_field
-          in: query
-          schema:
-            type: string
-        - name: key_value
-          in: query
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateMaintenanceRequestRequest'
-      responses:
-        '200':
-          description: Upserted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MaintenanceRequest'
-
   /api/v1/maintenance/maintenance_requests/trash:
     get:
       tags:
@@ -279,115 +80,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MaintenanceRequestList'
-
-  /api/v1/maintenance/maintenance_requests/{id}/restore:
-    parameters:
-      - $ref: '#/components/parameters/IdParam'
-    post:
-      tags:
-        - MaintenanceRequests
-      summary: Restore deleted MaintenanceRequest
-      operationId: restoreMaintenanceRequest
-      responses:
-        '200':
-          description: Restored
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MaintenanceRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/v1/maintenance/maintenance_requests/empty:
-    delete:
-      tags:
-        - MaintenanceRequests
-      summary: Empty trash for MaintenanceRequests
-      operationId: emptyTrashMaintenanceRequests
-      responses:
-        '200':
-          description: Trash emptied
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  deleted_count:
-                    type: integer
-
-  /api/v1/maintenance/maintenance_requests/delete/bulk:
-    post:
-      tags:
-        - MaintenanceRequests
-      summary: Bulk soft-delete MaintenanceRequests by ids (atomic)
-      operationId: bulkDeleteMaintenanceRequests
-      requestBody:
-        $ref: '#/components/requestBodies/BatchIds'
-      responses:
-        '200':
-          description: Soft-deleted
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  soft_deleted: { type: integer }
-        '400':
-          $ref: '#/components/responses/BadRequest'
-
-  /api/v1/maintenance/maintenance_requests/restore/bulk:
-    post:
-      tags:
-        - MaintenanceRequests
-      summary: Bulk restore MaintenanceRequests by ids (atomic)
-      operationId: bulkRestoreMaintenanceRequests
-      requestBody:
-        $ref: '#/components/requestBodies/BatchIds'
-      responses:
-        '200':
-          description: Restored
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MaintenanceRequestBulkResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-
-  /api/v1/maintenance/maintenance_requests/restore/all:
-    post:
-      tags:
-        - MaintenanceRequests
-      summary: Restore all soft-deleted MaintenanceRequests
-      operationId: restoreAllMaintenanceRequests
-      responses:
-        '200':
-          description: Restored
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  restored: { type: integer }
-
-  /api/v1/maintenance/maintenance_requests/trash/bulk:
-    delete:
-      tags:
-        - MaintenanceRequests
-      summary: Bulk permanently-delete MaintenanceRequests from trash by ids (atomic)
-      operationId: bulkPermanentDeleteMaintenanceRequests
-      requestBody:
-        $ref: '#/components/requestBodies/BatchIds'
-      responses:
-        '200':
-          description: Permanently deleted
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  permanently_deleted: { type: integer }
-        '400':
-          $ref: '#/components/responses/BadRequest'
 
   /api/v1/maintenance/maintenance_schedules:
     get:
@@ -1959,17 +1651,8 @@ components:
       type: object
       required:
         - name
-        - request_date
-        - duration
         - stage_id
-        - kanban_state
         - priority
-        - maintenance_type
-        - recurring
-        - repeat_interval
-        - repeat_unit
-        - repeat_type
-        - metadata
       properties:
         name:
           type: string
@@ -2008,8 +1691,6 @@ components:
         stage_id:
           type: string
           format: uuid
-        kanban_state:
-          type: string
         priority:
           type: string
         maintenance_type:
@@ -2035,8 +1716,6 @@ components:
           nullable: true
           type: string
           format: uuid
-        metadata:
-          type: object
 
     UpdateMaintenanceRequestRequest:
       type: object
@@ -2052,7 +1731,6 @@ components:
         - repeat_interval
         - repeat_unit
         - repeat_type
-        - metadata
       properties:
         name:
           type: string
@@ -2118,8 +1796,6 @@ components:
           nullable: true
           type: string
           format: uuid
-        metadata:
-          type: object
 
     PatchMaintenanceRequestRequest:
       type: object
@@ -2188,8 +1864,6 @@ components:
           nullable: true
           type: string
           format: uuid
-        metadata:
-          type: object
 
     MaintenanceRequestList:
       type: object
@@ -2251,8 +1925,6 @@ components:
         - name
         - interval_days
         - next_due_date
-        - status
-        - metadata
       properties:
         asset_id:
           type: string
@@ -2267,8 +1939,6 @@ components:
           format: date
         status:
           type: string
-        metadata:
-          type: object
 
     UpdateMaintenanceScheduleRequest:
       type: object
@@ -2278,7 +1948,6 @@ components:
         - interval_days
         - next_due_date
         - status
-        - metadata
       properties:
         asset_id:
           type: string
@@ -2293,8 +1962,6 @@ components:
           format: date
         status:
           type: string
-        metadata:
-          type: object
 
     PatchMaintenanceScheduleRequest:
       type: object
@@ -2312,8 +1979,6 @@ components:
           format: date
         status:
           type: string
-        metadata:
-          type: object
 
     MaintenanceScheduleList:
       type: object
@@ -2367,10 +2032,6 @@ components:
       type: object
       required:
         - name
-        - sequence
-        - fold
-        - done
-        - metadata
       properties:
         name:
           type: string
@@ -2381,8 +2042,6 @@ components:
           type: boolean
         done:
           type: boolean
-        metadata:
-          type: object
 
     UpdateMaintenanceStageRequest:
       type: object
@@ -2391,7 +2050,6 @@ components:
         - sequence
         - fold
         - done
-        - metadata
       properties:
         name:
           type: string
@@ -2402,8 +2060,6 @@ components:
           type: boolean
         done:
           type: boolean
-        metadata:
-          type: object
 
     PatchMaintenanceStageRequest:
       type: object
@@ -2417,8 +2073,6 @@ components:
           type: boolean
         done:
           type: boolean
-        metadata:
-          type: object
 
     MaintenanceStageList:
       type: object
@@ -2521,13 +2175,7 @@ components:
       type: object
       required:
         - asset_id
-        - maintenance_type
-        - status
         - scheduled_date
-        - labor_cost
-        - parts_cost
-        - total_cost
-        - metadata
       properties:
         asset_id:
           type: string
@@ -2584,20 +2232,14 @@ components:
         notes:
           nullable: true
           type: string
-        metadata:
-          type: object
 
     UpdateMaintenanceVisitRequest:
       type: object
       required:
         - asset_id
         - maintenance_type
-        - status
         - scheduled_date
         - labor_cost
-        - parts_cost
-        - total_cost
-        - metadata
       properties:
         asset_id:
           type: string
@@ -2607,8 +2249,6 @@ components:
           type: string
           format: uuid
         maintenance_type:
-          type: string
-        status:
           type: string
         warehouse_id:
           nullable: true
@@ -2627,10 +2267,6 @@ components:
           format: date
         labor_cost:
           type: string
-        parts_cost:
-          type: string
-        total_cost:
-          type: string
         maintenance_expense_account_id:
           nullable: true
           type: string
@@ -2643,19 +2279,9 @@ components:
           nullable: true
           type: string
           format: uuid
-        journal_id:
-          nullable: true
-          type: string
-          format: uuid
-        accounting_post_id:
-          nullable: true
-          type: string
-          format: uuid
         notes:
           nullable: true
           type: string
-        metadata:
-          type: object
 
     PatchMaintenanceVisitRequest:
       type: object
@@ -2669,8 +2295,6 @@ components:
           format: uuid
         maintenance_type:
           type: string
-        status:
-          type: string
         warehouse_id:
           nullable: true
           type: string
@@ -2688,10 +2312,6 @@ components:
           format: date
         labor_cost:
           type: string
-        parts_cost:
-          type: string
-        total_cost:
-          type: string
         maintenance_expense_account_id:
           nullable: true
           type: string
@@ -2704,19 +2324,9 @@ components:
           nullable: true
           type: string
           format: uuid
-        journal_id:
-          nullable: true
-          type: string
-          format: uuid
-        accounting_post_id:
-          nullable: true
-          type: string
-          format: uuid
         notes:
           nullable: true
           type: string
-        metadata:
-          type: object
 
     MaintenanceVisitList:
       type: object
@@ -2775,10 +2385,6 @@ components:
       required:
         - visit_id
         - item_id
-        - quantity
-        - unit_cost
-        - amount
-        - metadata
       properties:
         visit_id:
           type: string
@@ -2792,8 +2398,6 @@ components:
           type: string
         amount:
           type: string
-        metadata:
-          type: object
 
     UpdateMaintenanceVisitPartRequest:
       type: object
@@ -2801,9 +2405,6 @@ components:
         - visit_id
         - item_id
         - quantity
-        - unit_cost
-        - amount
-        - metadata
       properties:
         visit_id:
           type: string
@@ -2813,12 +2414,6 @@ components:
           format: uuid
         quantity:
           type: string
-        unit_cost:
-          type: string
-        amount:
-          type: string
-        metadata:
-          type: object
 
     PatchMaintenanceVisitPartRequest:
       type: object
@@ -2831,12 +2426,6 @@ components:
           format: uuid
         quantity:
           type: string
-        unit_cost:
-          type: string
-        amount:
-          type: string
-        metadata:
-          type: object
 
     MaintenanceVisitPartList:
       type: object

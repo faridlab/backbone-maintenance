@@ -13,11 +13,11 @@ pub mod maintenance_visit_part_handler;
 
 
 // Re-exports
-pub use maintenance_request_handler::{create_maintenance_request_routes, create_maintenance_request_read_routes, create_maintenance_request_write_routes};
-pub use maintenance_schedule_handler::{create_maintenance_schedule_routes, create_maintenance_schedule_read_routes, create_maintenance_schedule_write_routes};
-pub use maintenance_stage_handler::{create_maintenance_stage_routes, create_maintenance_stage_read_routes, create_maintenance_stage_write_routes};
-pub use maintenance_visit_handler::{create_maintenance_visit_routes, create_maintenance_visit_read_routes, create_maintenance_visit_write_routes};
-pub use maintenance_visit_part_handler::{create_maintenance_visit_part_routes, create_maintenance_visit_part_read_routes, create_maintenance_visit_part_write_routes};
+pub use maintenance_request_handler::{create_maintenance_request_routes, create_maintenance_request_read_routes, create_maintenance_request_write_routes, maintenance_request_permissions};
+pub use maintenance_schedule_handler::{create_maintenance_schedule_routes, create_maintenance_schedule_read_routes, create_maintenance_schedule_write_routes, maintenance_schedule_permissions};
+pub use maintenance_stage_handler::{create_maintenance_stage_routes, create_maintenance_stage_read_routes, create_maintenance_stage_write_routes, maintenance_stage_permissions};
+pub use maintenance_visit_handler::{create_maintenance_visit_routes, create_maintenance_visit_read_routes, create_maintenance_visit_write_routes, maintenance_visit_permissions};
+pub use maintenance_visit_part_handler::{create_maintenance_visit_part_routes, create_maintenance_visit_part_read_routes, create_maintenance_visit_part_write_routes, maintenance_visit_part_permissions};
 
 // This directory's extension (hand-written; ADR-0031).
 include!("mod.ext.rs");
