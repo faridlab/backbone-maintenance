@@ -1,6 +1,6 @@
 [package]
 name = "backbone-cmms"
-version = "0.14.1"
+version = "0.14.2"
 edition = "2021"
 description = "Maintenance management (CMMS): maintenance requests and stages, preventive schedules and maintenance visits"
 license = "MIT OR Apache-2.0"
@@ -20,8 +20,8 @@ path = "src/lib.rs"
 # or `rev = "<commit-sha>"`. Cargo dedupes the git fetch — the repo is only
 # cloned once even though four crates reference it.
 # -----------------------------------------------------------------------------
-backbone-core = { version = "3.7.0", features = ["postgres"] }
-backbone-orm = { version = "3.0.0" }
+backbone-core = { version = "3.18.0", features = ["postgres"] }
+backbone-orm = { version = "3.18.0" }
 backbone-auth = { version = "3.0.0" }
 backbone-messaging = { version = "3.0.0" }
 # Transactional outbox — MaintenanceCompleted is staged in the same tx as the completion (durable).
@@ -29,7 +29,7 @@ backbone-messaging = { version = "3.0.0" }
 # echo fills it; nil undecorated) — the module never keys a statement on it and never
 # runs the outbox migrate, so the multi-tenant fence feature stays off: the module is
 # tenant-agnostic and the composing service owns isolation.
-backbone-outbox = { version = "3.0.0" }
+backbone-outbox = { version = "3.18.0" }
 
 # Core async runtime and serialization
 tokio = { version = "1.0", features = ["full"] }
